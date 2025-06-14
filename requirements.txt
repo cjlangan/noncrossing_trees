@@ -1,0 +1,7 @@
+networkx
+numpy
+pulp
+matplotlib
+more-itertools
+sympy
+tqdm
