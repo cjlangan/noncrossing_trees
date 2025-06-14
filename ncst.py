@@ -685,11 +685,11 @@ def flip_tree(T):
     flipped_tree = []
 
     for a, b in T:
-        a_flipped = (n - a) % n
-        b_flipped = (n - b) % n
+        a_flipped = (n - a - 1) % n
+        b_flipped = (n - b - 1) % n
         flipped_tree.append((a_flipped, b_flipped))
 
-    return rotate_tree(flipped_tree, -1)
+    return flipped_tree
 
 
 # Function to blowup a tree
