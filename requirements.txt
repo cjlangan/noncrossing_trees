@@ -1,7 +1,8 @@
 networkx
 numpy
 pulp
-matplotlib
-more-itertools
 sympy
+scipy
+matplotlib
+more_itertools
 tqdm
