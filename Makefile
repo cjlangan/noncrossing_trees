@@ -1,6 +1,7 @@
 VENV_PATH := venv
 PYTHON := $(VENV_PATH)/bin/python
 PIP := $(VENV_PATH)/bin/pip
+PROJECT_NAME := noncrossing_trees
 PROJECT_ROOT := $(shell pwd)/..
 SCRIPTS_DIR := .
 
@@ -20,6 +21,11 @@ run-direct: check-venv
 run-local: check-venv
 	@echo "Running main.py from Scripts directory with virtual environment..."
 	PYTHONPATH=$(PROJECT_ROOT) $(PYTHON) main.py
+
+# Run main.py as a module
+run-module: check-venv
+	@echo "Running main as module with virtual environment..."
+	cd .. && PYTHONPATH=$(shell pwd) $(PROJECT_NAME)/$(PYTHON) -m $(PROJECT_NAME).main
 
 # Run the demo script
 demo: check-venv
