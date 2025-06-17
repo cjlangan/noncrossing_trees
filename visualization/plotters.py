@@ -176,3 +176,40 @@ class Visualizer:
             print(f"Generated conflict graph as {filename}")
         else:
             plt.show()
+
+
+    @staticmethod
+    def print_tree(T, filename=None):
+        """Generate an image of a single tree in convex position"""
+        n = len(T) + 1
+        angles = np.linspace(0, 2 * np.pi, n, endpoint=False)
+        points = np.stack([np.cos(angles), np.sin(angles)], axis=1)
+
+        fig, ax = plt.subplots(figsize=(8, 8), dpi=300)
+        ax.set_aspect('equal')
+        ax.axis('off')
+
+        # Draw the convex polygon outline
+        for i in range(n):
+            x1, y1 = points[i]
+            x2, y2 = points[(i + 1) % n]
+            ax.plot([x1, x2], [y1, y2], color='gray', linestyle='--', linewidth=0.5)
+
+        # Draw the tree edges
+        for (i, j) in T:
+            xi, yi = points[i]
+            xj, yj = points[j]
+            ax.plot([xi, xj], [yi, yj], color='black', linewidth=2, alpha=0.8)
+
+        # Label the vertices
+        for i, (x, y) in enumerate(points):
+            ax.text(x * 1.08, y * 1.08, str(i), fontsize=12, ha='center', va='center')
+
+        plt.title("Tree on Convex Polygon")
+
+        if filename:
+            plt.savefig(filename, bbox_inches='tight')
+            plt.close(fig)
+            print("Generated tree graph as", filename)
+        else:
+            plt.show()

@@ -134,3 +134,15 @@ class GammaAnalyzer:
             'E_i': E_i,
             'E_f': E_f
         }
+
+    def analyze_pair_blowup(self, T_i: List[Tuple[int, int]], T_f: List[Tuple[int, int]], k: int, verbose: bool = True, plot: bool = True):
+        """Function to test the k blowup of two trees"""
+
+        # Get the vertices of H = H(T,T') AND the near-near edge pairs associated
+        conflict_vertices, E_i, E_f = self.conflict_analyzer.get_gaps_and_edge_pairs(T_i, T_f)
+
+        # Get the k blowups
+        T_i_blown = TreeUtils.blowup_tree(T_i, k, E_i, conflict_vertices)
+        T_f_blown = TreeUtils.blowup_tree(T_f, k, E_f, conflict_vertices)
+
+        self.analyze_tree_pair(T_i_blown, T_f_blown, verbose, plot)

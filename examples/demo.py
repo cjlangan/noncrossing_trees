@@ -1,12 +1,15 @@
 from ..analysis import GammaAnalyzer, ParallelGammaSearcher
 from ..generation import NCSTGenerator
 from ..core import TreeUtils
+from ..enumeration import FiniteGammaSearcher
+from ..visualization import Visualizer
 
 
 def run_demo():
     # Initialize the main analyzer
     gamma_analyzer = GammaAnalyzer()
     parallel_searcher = ParallelGammaSearcher(num_workers=6)
+    finite_searcher = FiniteGammaSearcher()
 
     # Trees from the paper, n = 13
     # T_i = [(0,3),(0,4),(1,3),(4,7),(4,8),(5,7),(8,11),(8,12),(9,11),(2, 3),(6,7),(10,11)]
@@ -35,6 +38,9 @@ def run_demo():
     T_f = [(6, 2), (11, 2), (10, 7), (11, 0), (10, 6),
            (4, 3), (9, 7), (8, 7), (5, 3), (6, 3), (11, 1)]
 
+    # gamma_analyzer.analyze_pair_blowup(T_i, T_f, 2)
+
+
     # Best tree with added cell, no good
     # T_i = [(5, 9), (0, 13), (1, 4), (0, 15), (1, 5), (7, 8), (2, 4), (3, 4), (6, 8), (5, 8), (0, 14), (9, 13), (9, 12), (10, 12), (11, 12)]
     # T_f = TreeUtils.flip_tree(T_i)
@@ -48,11 +54,12 @@ def run_demo():
     # T_f = [(12, 11), (5, 4), (10, 9), (13, 0), (11, 9), (7, 1), (15, 0), (14, 0), (6, 1), (12, 8), (13, 7), (12, 7), (6, 3), (5, 3), (6, 2)]
 
     # Analyze the best known tree pair
-    print("=== Analyzing Best Known Tree Pair (gamma ≈ 0.44444444, n=12) ===")
-    result = gamma_analyzer.analyze_tree_pair(
-        T_i, T_f, verbose=True, plot=True)
-    gamma, ac_h, E_i, E_f, H = result
-    print(f"Analysis complete: gamma = {gamma}")
+    # print("=== Analyzing Best Known Tree Pair (gamma ≈ 0.44444444, n=12) ===")
+    # result = gamma_analyzer.analyze_tree_pair(
+    #     T_i, T_f, verbose=False, plot=False)
+    # gamma, ac_h, E_i, E_f, H = result
+    # print(f"Analysis complete: gamma = {gamma}")
+
 
     # Alternative analyses you can uncomment:
 
@@ -109,11 +116,15 @@ def run_demo():
     # is not implemented in the provided classes. You would need to implement this separately
     # or use the existing parallel search functionality shown above.
 
-    print("\n=== Analysis Complete ===")
-    print("Check the generated PNG files for visualizations:")
-    print("- original_trees.png: Shows both trees on convex position")
-    print("- linear_graph.png: Shows linear representation")
-    print("- conflict_graph.png: Shows conflict graph with edge types")
+    # Testing enumeration function analysis
+    finite_searcher.enumerate_ncsts_k_borders(9, 2)
+    finite_searcher.enumerate_ncsts_k_borders_parallel(9, 2)
+
+    # print("\n=== Analysis Complete ===")
+    # print("Check the generated PNG files for visualizations:")
+    # print("- original_trees.png: Shows both trees on convex position")
+    # print("- linear_graph.png: Shows linear representation")
+    # print("- conflict_graph.png: Shows conflict graph with edge types")
 
 
 if __name__ == "__main__":

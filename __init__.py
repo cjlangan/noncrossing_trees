@@ -13,6 +13,7 @@ from .analysis import GammaAnalyzer, ConflictAnalyzer, ParallelGammaSearcher
 from .formulas import NCSTFormulas
 from .optimization import OptimizationSolver
 from .visualization import Visualizer
+from .enumeration import FiniteGammaSearcher
 
 __version__ = "0.1.0"
 __author__ = ["Connor", "Atish"]
@@ -28,5 +29,6 @@ __all__ = [
     'ParallelGammaSearcher',
     'NCSTFormulas',
     'OptimizationSolver',
-    'Visualizer'
+    'Visualizer',
+    'FiniteGammaSearcher'
 ]

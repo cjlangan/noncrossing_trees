@@ -6,7 +6,9 @@ class NCSTFormulas:
 
     @staticmethod
     def U(n: int, k: int) -> float:
-        """Compute U(n, k) formula."""
+        """
+        Compute U(n, k) = (2/(n-2)) * C(n-2, k) * sum_{j=0}^{k-1} C(n-1, j) * C(n-k-2, k-1-j) * 2^{n-1-2k+j}
+        """
         if k < 0 or n <= 2 or k >= n:
             return 0
 
@@ -25,7 +27,7 @@ class NCSTFormulas:
     @staticmethod
     def T(n: int, k: int) -> int:
         """
-        Compute T(n, k) - number of NCSTs on n vertices with exactly k borders.
+        Compute T(n, k) = U(n, k-1) - U(n, k) + C(n-1, k) * (1/(n-1)) * sum_{j=0}^{k-1} C(n-1, j) * C(n-k-1, k-1-j) * 2^{n-2k+j}
         """
         if k < 2 or k >= n or n <= 2:
             return 0
