@@ -38,6 +38,7 @@ def run_demo():
     T_f = [(6, 2), (11, 2), (10, 7), (11, 0), (10, 6),
            (4, 3), (9, 7), (8, 7), (5, 3), (6, 3), (11, 1)]
 
+    gamma_analyzer.analyze_pair_blowup(T_i, T_f, 2)
 
     # Best tree with added cell, no good
     # T_i = [(5, 9), (0, 13), (1, 4), (0, 15), (1, 5), (7, 8), (2, 4), (3, 4), (6, 8), (5, 8), (0, 14), (9, 13), (9, 12), (10, 12), (11, 12)]
@@ -53,12 +54,11 @@ def run_demo():
 
     # Analyze the best known tree pair
     # print("=== Analyzing Best Known Tree Pair (gamma ≈ 0.44444444, n=12) ===")
-    result = gamma_analyzer.analyze_tree_pair(
-        T_i, T_f, verbose=False, plot=False)
-    gamma, ac_h, E_i, E_f, H = result
+    # result = gamma_analyzer.analyze_tree_pair(
+    #     T_i, T_f, verbose=False, plot=False)
+    # gamma, ac_h, E_i, E_f, H = result
     # print(f"Analysis complete: gamma = {gamma}")
 
-    Visualizer.print_tree(TreeUtils.blowup_tree(T_i, 1, E_i, list(H.nodes)))
 
     # Alternative analyses you can uncomment:
 
