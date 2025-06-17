@@ -36,8 +36,8 @@ class TreeUtils:
     def flip_tree(tree: List[Tuple[int, int]]) -> List[Tuple[int, int]]:
         """Flip tree and normalize."""
         n = len(tree) + 1
-        flipped = [((n - a) % n, (n - b) % n) for a, b in tree]
-        return TreeUtils.rotate_tree(flipped, -1)
+        flipped = [((n - a - 1) % n, (n - b - 1) % n) for a, b in tree]
+        return flipped
 
     @staticmethod
     def normalize_edges(edges: List[Tuple[int, int]]) -> List[Tuple[int, int]]:
