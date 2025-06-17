@@ -6,6 +6,7 @@ from matplotlib.lines import Line2D
 import networkx as nx
 from typing import List, Tuple, Optional
 
+PROJECT_NAME = "noncrossing_trees"
 
 class Visualizer:
     """Class for generating visualizations of trees and graphs."""
@@ -74,7 +75,7 @@ class Visualizer:
         plt.title("Original NCSTs on Shared Vertices")
 
         if filename:
-            plt.savefig(f"../{filename}", bbox_inches='tight')
+            plt.savefig(f"./{PROJECT_NAME}/{filename}", bbox_inches='tight')
             plt.close(fig)
             print(f"Generated shared tree graph as {filename}")
         else:
@@ -140,7 +141,7 @@ class Visualizer:
                   fontsize=8, frameon=False)
 
         if filename:
-            plt.savefig(f"../{filename}", bbox_inches='tight')
+            plt.savefig(f"./{PROJECT_NAME}/{filename}", bbox_inches='tight')
             plt.close(fig)
             print(f"Generated linear graph as {filename}")
         else:
@@ -170,7 +171,7 @@ class Visualizer:
         plt.title("Conflict Directed Graph with Edge Type Legend")
 
         if filename:
-            plt.savefig(f"../{filename}", bbox_inches='tight')
+            plt.savefig(f"./{PROJECT_NAME}/{filename}", bbox_inches='tight')
             plt.close()
             print(f"Generated conflict graph as {filename}")
         else:

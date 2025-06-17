@@ -39,16 +39,20 @@ def run_demo():
     # T_i = [(5, 9), (0, 13), (1, 4), (0, 15), (1, 5), (7, 8), (2, 4), (3, 4), (6, 8), (5, 8), (0, 14), (9, 13), (9, 12), (10, 12), (11, 12)]
     # T_f = TreeUtils.flip_tree(T_i)
 
+    # Testing
+    # T_i = [(0, 11), (11, 1), (1, 10), (10, 2), (2, 9), (9, 3), (3, 8), (8, 4), (4, 7), (7, 5), (5, 6)]
+    # T_f = TreeUtils.rotate_tree(T_i, 2)
+
     # Nam Trees with edge removal
     # T_i = [(3, 4), (10, 11), (5, 6), (2, 15), (4, 6), (8, 14), (0, 15), (1, 15), (9, 14), (3, 7), (2, 8), (3, 8), (9, 12), (10, 12), (9, 13)]
     # T_f = [(12, 11), (5, 4), (10, 9), (13, 0), (11, 9), (7, 1), (15, 0), (14, 0), (6, 1), (12, 8), (13, 7), (12, 7), (6, 3), (5, 3), (6, 2)]
 
     # Analyze the best known tree pair
-    # print("=== Analyzing Best Known Tree Pair (gamma ≈ 0.44444444, n=12) ===")
-    # result = gamma_analyzer.analyze_tree_pair(
-    #     T_i, T_f, verbose=True, plot=True)
-    # gamma, ac_h, E_i, E_f, H = result
-    # print(f"Analysis complete: gamma = {gamma}")
+    print("=== Analyzing Best Known Tree Pair (gamma ≈ 0.44444444, n=12) ===")
+    result = gamma_analyzer.analyze_tree_pair(
+        T_i, T_f, verbose=True, plot=True)
+    gamma, ac_h, E_i, E_f, H = result
+    print(f"Analysis complete: gamma = {gamma}")
 
     # Alternative analyses you can uncomment:
 
@@ -59,15 +63,15 @@ def run_demo():
     # gamma_analyzer.analyze_tree_pair(T_i_rotated, T_f_rotated, verbose=True, plot=False)
 
     # Search for better trees using parallel search
-    print("\n=== Searching for Trees with gamma < 0.5 ===")
-    result = parallel_searcher.find_trees_with_gamma_parallel(
-        n=12,
-        gamma_threshold=0.499,
-        method="f",  # flip method
-        k=3,         # exactly 3 border edges
-        notable=True,
-        plot=True
-    )
+    # print("\n=== Searching for Trees with gamma < 0.5 ===")
+    # result = parallel_searcher.find_trees_with_gamma_parallel(
+    #     n=12,
+    #     gamma_threshold=0.499,
+    #     method="f",  # flip method
+    #     k=3,         # exactly 3 border edges
+    #     notable=True,
+    #     plot=True
+    # )
 
     # Generate and analyze a random NCST pair
     # print("\n=== Generating and Analyzing Random NCST Pair ===")

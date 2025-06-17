@@ -9,8 +9,8 @@ SCRIPTS_DIR := .
 
 # Run main.py as a module (recommended)
 run: check-venv
-	@echo "Running Scripts.main as module with virtual environment..."
-	cd .. && PYTHONPATH=$(PROJECT_ROOT) Scripts/$(PYTHON) -m Scripts.main
+	@echo "Running $(PROJECT_NAME).main as module with virtual environment..."
+	cd .. && python -m $(PROJECT_NAME).main
 
 # Alternative: Run main.py directly with PYTHONPATH
 run-direct: check-venv
@@ -22,11 +22,6 @@ run-local: check-venv
 	@echo "Running main.py from Scripts directory with virtual environment..."
 	PYTHONPATH=$(PROJECT_ROOT) $(PYTHON) main.py
 
-# Run main.py as a module
-run-module: check-venv
-	@echo "Running main as module with virtual environment..."
-	cd .. && PYTHONPATH=$(shell pwd) $(PROJECT_NAME)/$(PYTHON) -m $(PROJECT_NAME).main
-
 # Run the demo script
 demo: check-venv
 	@echo "Running demo script with virtual environment..."
@@ -36,6 +31,17 @@ demo: check-venv
 install-dev: check-venv
 	@echo "Installing package in development mode..."
 	cd .. && Scripts/$(PIP) install -e .
+
+
+# Check if virtual environment exists
+check-venv:
+	@if [ ! -d "$(VENV_PATH)" ]; then \
+		echo "Virtual environment not found at $(VENV_PATH)"; \
+		echo "Creating one..."; \
+		python -m venv venv && source venv/bin/activate \
+		install-deps \
+		exit 1; \
+	fi
 
 # Install requirements if requirements.txt exists
 install-deps:
@@ -49,14 +55,6 @@ install-deps:
 		echo "No requirements.txt found"; \
 	fi
 
-# Check if virtual environment exists
-check-venv:
-	@if [ ! -d "$(VENV_PATH)" ]; then \
-		echo "ERROR: Virtual environment not found at $(VENV_PATH)"; \
-		echo "Create it first with: python -m venv $(VENV_PATH)"; \
-		exit 1; \
-	fi
-
 # Activate virtual environment (for manual use)
 activate:
 	@echo "To activate the virtual environment, run:"
@@ -67,6 +65,8 @@ clean:
 	find . -type f -name "*.pyc" -delete
 	find . -type d -name "__pycache__" -exec rm -rf {} +
 	find . -type d -name "*.egg-info" -exec rm -rf {} +
+	@echo "Cleaning images..."
+	find . -type f -name "*.png" -delete
 
 debug: check-venv
 	@echo "Project root: $(PROJECT_ROOT)"
