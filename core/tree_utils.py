@@ -1,10 +1,55 @@
 import networkx as nx
+import numpy as np
 from typing import List, Tuple
 from .data_structures import UnionFind
 
 
 class TreeUtils:
     """Utility class for tree operations and transformations."""
+
+    @staticmethod
+    def blowup_tree(T: List[Tuple[int, int]], k: int, E: List[Tuple[int, int]], conflict_vertices: List[int]) -> List[Tuple[int, int]]:
+        """
+        Blows up a tree by inserting k edges bewteen each gap
+
+        PARAMETERS:
+            T: the tree
+            k: number of added edges per gap
+            E: T's near edges from near-near pairs
+            conflict_vertices: the conflict graphs conflict vertices
+        """
+        T_blown = list(T)
+        all_vertices = set()
+
+        for i in range(len(E)):
+            a, b = sorted(E[i])
+            cv = conflict_vertices[i] # the conflict vertex
+
+            # Evenly space new vertices within the gap
+            new_fractions = np.linspace(cv, cv+1, k + 2)[1:-1]
+            all_vertices.update(new_fractions)
+                
+            # Determine endpoint
+            endpoint = b if a == cv else a
+
+            # Add new edges to tree
+            for v in new_fractions:
+                T_blown.append((v, endpoint))
+
+        # Normalize all vertices: assign integer labels based on sorted order
+        for u, v in T_blown:
+            all_vertices.add(u)
+            all_vertices.add(v)
+
+        sorted_vertices = sorted(all_vertices)
+        mapping = {v: i for i, v in enumerate(sorted_vertices)}
+
+        def normalize(v):
+            return mapping[v]
+
+        T_normalized = [(normalize(u), normalize(v)) for (u, v) in T_blown]
+
+        return T_normalized
 
     @staticmethod
     def is_valid_tree(vertices: List[int], edges: List[Tuple[int, int]]) -> bool:

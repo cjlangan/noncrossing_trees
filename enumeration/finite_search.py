@@ -15,6 +15,7 @@ class FiniteGammaSearcher:
         self.visualizer = Visualizer()
 
     def enumerate_ncsts_k_borders(self, n: int, k: int, test: bool = True):
+        """Enumerate over all NCSTs on n vertices with exactly k border edges"""
         seen: Set[FrozenSet[Tuple[int, int]]] = set()
         num_tested = 0
         best_gamma = 1
@@ -31,6 +32,7 @@ class FiniteGammaSearcher:
             local_edges: List[Tuple[int, int]],
             all_edges: Set[Tuple[int, int]],
         ):
+            """Recursively chooses next chord for the lleft and right sections"""
             nonlocal num_tested, seen, best_gamma, best_trees, four_nine_gamma_counter
 
             if len(all_edges) == n - 1 and TreeUtils.is_valid_tree(list(range(n)), list(all_edges)):
@@ -38,6 +40,7 @@ class FiniteGammaSearcher:
                 flipped_tree = TreeUtils.flip_tree(base_tree)
 
                 def rotated_versions(tree: List[Tuple[int, int]]) -> List[FrozenSet[Tuple[int, int]]]:
+                    """Get all rotated version of the initial tree"""
                     return [
                         frozenset(
                             (min((a + r) % n, (b + r) % n), max((a + r) % n, (b + r) % n))
