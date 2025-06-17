@@ -38,7 +38,8 @@ def run_demo():
     T_f = [(6, 2), (11, 2), (10, 7), (11, 0), (10, 6),
            (4, 3), (9, 7), (8, 7), (5, 3), (6, 3), (11, 1)]
 
-    gamma_analyzer.analyze_pair_blowup(T_i, T_f, 2)
+    # gamma_analyzer.analyze_pair_blowup(T_i, T_f, 2)
+
 
     # Best tree with added cell, no good
     # T_i = [(5, 9), (0, 13), (1, 4), (0, 15), (1, 5), (7, 8), (2, 4), (3, 4), (6, 8), (5, 8), (0, 14), (9, 13), (9, 12), (10, 12), (11, 12)]
@@ -116,7 +117,8 @@ def run_demo():
     # or use the existing parallel search functionality shown above.
 
     # Testing enumeration function analysis
-    # finite_searcher.enumerate_ncsts_k_borders(9, 2)
+    finite_searcher.enumerate_ncsts_k_borders(9, 2)
+    finite_searcher.enumerate_ncsts_k_borders_parallel(9, 2)
 
     # print("\n=== Analysis Complete ===")
     # print("Check the generated PNG files for visualizations:")
