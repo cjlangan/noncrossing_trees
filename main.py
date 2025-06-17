@@ -1,4 +1,8 @@
-from .examples import run_demo
+from .examples import *
 
 if __name__ == "__main__":
-    run_demo()
+    best_trees_demo()
+    # blowup_demo()
+    # random_trees_demo()
+    # random_search_demo()
+    # enumeration_search_demo()

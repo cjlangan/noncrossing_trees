@@ -1,3 +1,9 @@
-from .demo import run_demo
+from .best_trees import best_trees_demo
+from .blowup import blowup_demo
+from .random_trees import random_trees_demo
+from .random_search import random_search_demo
+from .enumeration_search import enumeration_search_demo
+from .random_trees import random_trees_demo
 
-__all__ = ['run_demo']
+__all__ = ['best_trees_demo', 'blowup_demo', 'random_search_demo', 
+           'enumeration_search_demo', 'random_trees_demo']
