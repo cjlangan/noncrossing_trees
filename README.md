@@ -112,6 +112,21 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
+### Execution Error
+
+If you encounter: 
+
+```bash
+FileNotFoundError: [Errno 2] No such file or directory: '.../matplotlib/mpl-data/images/matplotlib.png'
+```
+
+Try reinstalling matplotlib: 
+
+```bash
+pip uninstall matplotlib
+pip install matplotlib
+```
+
 ### LSP/IDE Configuration
 
 For proper IDE support with imports, consider:
