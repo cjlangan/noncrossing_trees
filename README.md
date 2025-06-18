@@ -14,7 +14,7 @@ We specifically aim to find a pair of trees with a new best-know confliction val
 
 ```bash
 git clone https://github.com/cjlangan/noncrossing_trees
-cd reconfiguration-non-crossing-spanning-trees && make
+cd noncrossing_trees/ && make
 ```
 
 - This will automatically create a virtual environment, install requirements, and run the program.
