@@ -17,8 +17,7 @@ class Visualizer:
         percent = current / total if total > 0 else 0
         filled_len = int(bar_length * percent)
         bar = '=' * filled_len + '-' * (bar_length - filled_len)
-        sys.stdout.write(f"\rProgress: [{bar}] {
-                         percent:.1%} ({current}/{total})")
+        sys.stdout.write(f"\rProgress: [{bar}] {percent:.1%} ({current}/{total})")
         sys.stdout.flush()
 
     @staticmethod

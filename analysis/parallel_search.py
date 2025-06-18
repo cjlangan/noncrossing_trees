@@ -133,8 +133,7 @@ class ParallelGammaSearcher:
         result_holder['total_tested'] = 0
         lock = Lock()
 
-        print(f"Beginning parallel search for gamma ≤ {
-              gamma_threshold} on {n} vertices...")
+        print(f"Beginning parallel search for gamma ≤ {gamma_threshold} on {n} vertices...")
         print(
             f"Using {self.num_workers} worker processes with method '{method}'")
         if k is not None:
@@ -199,6 +198,5 @@ class ParallelGammaSearcher:
 
             return result
         else:
-            print(f"\nNo gamma ≤ {gamma_threshold} found after testing {
-                  result_holder['total_tested']} pairs")
+            print(f"\nNo gamma ≤ {gamma_threshold} found after testing {result_holder['total_tested']} pairs")
             return {}
