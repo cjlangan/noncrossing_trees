@@ -112,8 +112,7 @@ class GammaAnalyzer:
             if curr_gamma is not None and (curr_gamma < gamma_threshold or verbose or
                                            (curr_gamma < 0.6)):
                 print(
-                    f"Found gamma of: {curr_gamma} = {
-                        ac_h}/{v_h} on {n} vertices "
+                    f"Found gamma of: {curr_gamma} = { ac_h}/{v_h} on {n} vertices "
                     f"with seeds {seed_i} and {seed_f}."
                 )
 

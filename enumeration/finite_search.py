@@ -1,11 +1,13 @@
 from typing import List, Tuple, Set, FrozenSet, Any, Iterator
 import multiprocessing
 from multiprocessing.sharedctypes import Synchronized
+from concurrent.futures import ProcessPoolExecutor
+from itertools import combinations
 
 from ..analysis import GammaAnalyzer
 from ..visualization import Visualizer
 from ..formulas import NCSTFormulas
-from ..generation import NecklaceGenerator
+from ..generation import NecklaceGenerator, ConfinedEdgeGenerator
 from ..core import TreeUtils
 
 
@@ -18,6 +20,19 @@ class FiniteGammaSearcher:
         self.shared_counter: Synchronized
         self.total_trees = None
 
+    @staticmethod
+    def rotated_versions(tree: list[tuple[int, int]]) -> list[frozenset[tuple[int, int]]]:
+        """get all rotated versions of the initial tree"""
+        n = len(tree) + 1
+        return [
+            frozenset(
+                (min((a + r) % n, (b + r) % n), max((a + r) % n, (b + r) % n))
+                for a, b in tree
+            )
+            for r in range(n)
+        ]
+
+
     def enumerate_ncsts_k_borders(self, n: int, k: int, test: bool = True):
         """Enumerate over all NCSTs on n vertices with exactly k border edges"""
         seen: Set[FrozenSet[Tuple[int, int]]] = set()
@@ -27,7 +42,7 @@ class FiniteGammaSearcher:
         four_nine_gamma_counter = 0
         four_nine_list: List[List[Tuple[int, int]]] = []
 
-        print(f"Beginning test on all NCSTSs with {n} vertices and {k} borders")
+        print(f"Beginning test on all NCSTSs with {n} vertices and {k} borders against their flip")
         num_trees = NCSTFormulas.T(n, k)
         Visualizer.print_progress_bar(num_tested, num_trees)
 
@@ -36,25 +51,15 @@ class FiniteGammaSearcher:
             local_edges: List[Tuple[int, int]],
             all_edges: Set[Tuple[int, int]],
         ):
-            """Recursively chooses next chord for the lleft and right sections"""
+            """Recursively chooses next chord for the left and right sections"""
             nonlocal num_tested, seen, best_gamma, best_trees, four_nine_gamma_counter
 
             if len(all_edges) == n - 1 and TreeUtils.is_valid_tree(list(range(n)), list(all_edges)):
                 base_tree = [(min(a, b), max(a, b)) for a, b in all_edges]
                 flipped_tree = TreeUtils.flip_tree(base_tree)
 
-                def rotated_versions(tree: List[Tuple[int, int]]) -> List[FrozenSet[Tuple[int, int]]]:
-                    """Get all rotated version of the initial tree"""
-                    return [
-                        frozenset(
-                            (min((a + r) % n, (b + r) % n), max((a + r) % n, (b + r) % n))
-                            for a, b in tree
-                        )
-                        for r in range(n)
-                    ]
-
                 for tree_variant in (base_tree, flipped_tree):
-                    for rotated in rotated_versions(tree_variant):
+                    for rotated in self.rotated_versions(tree_variant):
                         if rotated in seen:
                             continue
                         seen.add(rotated)
@@ -163,18 +168,8 @@ class FiniteGammaSearcher:
                 base_tree = [(min(a, b), max(a, b)) for a, b in all_edges]
                 flipped_tree = TreeUtils.flip_tree(base_tree)
 
-                def rotated_versions(tree: List[Tuple[int, int]]) -> List[FrozenSet[Tuple[int, int]]]:
-                    """Get all rotated versions of the initial tree"""
-                    return [
-                        frozenset(
-                            (min((a + r) % n, (b + r) % n), max((a + r) % n, (b + r) % n))
-                            for a, b in tree
-                        )
-                        for r in range(n)
-                    ]
-
                 for tree_variant in (base_tree, flipped_tree):
-                    for rotated in rotated_versions(tree_variant):
+                    for rotated in self.rotated_versions(tree_variant):
                         if rotated in seen:
                             continue
                         seen.add(rotated)
@@ -248,7 +243,7 @@ class FiniteGammaSearcher:
         Note: Currently this function only tests a found tree against its flip counterpart.
               That is, it does NOT test every conceivable combination.
         """
-        print(f"Parallel NCST Search for n={n}, k={k}")
+        print(f"Parallel NCST Search for n={n}, k={k}, testing against flip.")
         total_trees_expected = NCSTFormulas.T(n, k)
         print(f"Expected total trees: {total_trees_expected}")
         
@@ -292,3 +287,235 @@ class FiniteGammaSearcher:
         print(f"Found on trees: {best_trees[0]} and {best_trees[1]}")
         print(f"Number of 4/9 or better: {total_four_nine}")
         print(f"All 4/9 or better: {all_four_nine}")
+
+
+    @staticmethod
+    def even_rotated_versions(tree: list[tuple[int, int]], k: int) -> list[frozenset[tuple[int, int]]]:
+        """Get all rotated versions of the tree such that k evenly spaced borders remain in place."""
+        n = len(tree) + 1
+        step = n // k
+        return [
+            frozenset(
+                (min((a + r) % n, (b + r) % n), max((a + r) % n, (b + r) % n))
+                for a, b in tree
+            )
+            for r in range(0, n, step)
+        ]
+
+    def enumerate_even_shared_full(self, n: int, k: int, test: bool = True, plot: bool = True):
+        """
+        Generate all NCSTs with k evenly spaced border edges and compare every unique pair
+        that preserves the shared border edges.
+        """
+        print(f"Generating all NCSTs with {n} vertices and {k} evenly-spaced shared border edges...")
+
+        seen: Set[frozenset[Tuple[int, int]]] = set()
+        all_trees: List[List[Tuple[int, int]]] = []
+
+        def enumerate_ncsts_helper(
+            points: List[int],
+            local_edges: List[Tuple[int, int]],
+            all_edges: Set[Tuple[int, int]],
+        ):
+            """Recursively chooses next chord for the left and right sections"""
+            if len(all_edges) == n - 1 and TreeUtils.is_valid_tree(list(range(n)), list(all_edges)):
+                base_tree = [(min(a, b), max(a, b)) for a, b in all_edges]
+
+                for variant in (base_tree, TreeUtils.flip_tree(base_tree)):
+                    for rotated in self.even_rotated_versions(variant, k):
+                        if rotated in seen:
+                            continue
+                        seen.add(rotated)
+                        all_trees.append(sorted(list(rotated)))
+                return
+
+            for i in range(len(points)):
+                for j in range(i + 2, len(points)):
+                    a, b = points[i], points[j]
+                    if (a + 1) % n == b or (b + 1) % n == a:
+                        continue
+
+                    edge = (min(a, b), max(a, b))
+                    if edge in all_edges:
+                        continue
+
+                    new_local_edges = local_edges + [edge]
+                    new_all_edges = all_edges | {edge}
+
+                    if TreeUtils.has_cycle(new_local_edges):
+                        continue
+
+                    a_idx, b_idx = sorted((points.index(a), points.index(b)))
+                    between = points[a_idx + 1:b_idx]
+                    outside = points[:a_idx + 1] + points[b_idx:]
+
+                    between_edges = [e for e in new_local_edges if e[0] in between and e[1] in between]
+                    outside_edges = [e for e in new_local_edges if e[0] in outside and e[1] in outside]
+
+                    enumerate_ncsts_helper(between, between_edges, new_all_edges)
+                    enumerate_ncsts_helper(outside, outside_edges, new_all_edges)
+
+        # Generate all valid trees
+        borders = ConfinedEdgeGenerator.evenly_spaced_border_combination(n, k)
+        border_set = {(min(a, b), max(a, b)) for a, b in borders}
+        enumerate_ncsts_helper(list(range(n)), borders, set(border_set))
+
+        print(f"\nGenerated {len(all_trees)} unique NCSTs with shared borders.")
+        print(f"Beginning pairwise comparisons...")
+
+        # Analysis Phase
+        best_gamma = 1
+        best_trees: Tuple[List[Tuple[int, int]], List[Tuple[int, int]]] = ([], [])
+        four_nine_gamma_counter = 0
+        four_nine_list: List[List[Tuple[int, int]]] = []
+
+        num_pairs = (len(all_trees) * (len(all_trees) - 1)) // 2
+        pair_counter = 0
+
+        Visualizer.print_progress_bar(0, num_pairs)
+
+        for i in range(len(all_trees)):
+            for j in range(i + 1, len(all_trees)):
+                t1 = all_trees[i]
+                t2 = all_trees[j]
+                pair_counter += 1
+
+                if test:
+                    gamma, ac_h, E_i, E_f, H = self.gamma_analyzer.analyze_tree_pair(
+                        t1, t2, verbose=False, plot=False
+                    )
+
+                    self.visualizer.print_progress_bar(pair_counter, num_pairs)
+
+                    if gamma is None:
+                        continue
+
+                    if gamma < best_gamma:
+                        best_gamma = gamma
+                        best_trees = (t1, t2)
+
+                    if gamma <= 4 / 9:
+                        four_nine_gamma_counter += 1
+                        four_nine_list.append(t1)
+
+                    if gamma < 4 / 9:
+                        print("\n✅✅✅FOUND BETTER GAMMA✅✅✅", flush=True)
+                        print(f"Gamma = {gamma}", flush=True)
+                        print(f"Used {sorted(t1)} and {sorted(t2)}", flush=True)
+                        exit()
+
+        print(f"\nPairwise comparison complete.")
+        print(f"Total pairs tested: {pair_counter}")
+        print(f"Best gamma: {best_gamma}")
+        print(f"Found on trees: {best_trees[0]} and {best_trees[1]}")
+        print(f"Number of 4/9 or better: {four_nine_gamma_counter}")
+        print(f"All 4/9 or better: {four_nine_list}")
+
+        if test and plot:
+            self.gamma_analyzer.analyze_tree_pair(best_trees[0], best_trees[1], verbose=False)
+
+
+    def enumerate_even_shared_full_parallel(self, n: int, k: int, test: bool = True, plot: bool = True):
+        print(f"Generating all NCSTs with {n} vertices and {k} evenly-spaced shared border edges...")
+
+        seen: Set[frozenset[Tuple[int, int]]] = set()
+        all_trees: List[List[Tuple[int, int]]] = []
+
+        def enumerate_ncsts_helper(points, local_edges, all_edges):
+            if len(all_edges) == n - 1 and TreeUtils.is_valid_tree(list(range(n)), list(all_edges)):
+                base_tree = [(min(a, b), max(a, b)) for a, b in all_edges]
+                for variant in (base_tree, TreeUtils.flip_tree(base_tree)):
+                    for rotated in self.even_rotated_versions(variant, k):
+                        if rotated in seen:
+                            continue
+                        seen.add(rotated)
+                        all_trees.append(sorted(list(rotated)))
+                return
+
+            for i in range(len(points)):
+                for j in range(i + 2, len(points)):
+                    a, b = points[i], points[j]
+                    if (a + 1) % n == b or (b + 1) % n == a:
+                        continue
+                    edge = (min(a, b), max(a, b))
+                    if edge in all_edges:
+                        continue
+                    new_local_edges = local_edges + [edge]
+                    new_all_edges = all_edges | {edge}
+                    if TreeUtils.has_cycle(new_local_edges):
+                        continue
+                    a_idx, b_idx = sorted((points.index(a), points.index(b)))
+                    between = points[a_idx + 1:b_idx]
+                    outside = points[:a_idx + 1] + points[b_idx:]
+                    between_edges = [e for e in new_local_edges if e[0] in between and e[1] in between]
+                    outside_edges = [e for e in new_local_edges if e[0] in outside and e[1] in outside]
+                    enumerate_ncsts_helper(between, between_edges, new_all_edges)
+                    enumerate_ncsts_helper(outside, outside_edges, new_all_edges)
+
+        borders = ConfinedEdgeGenerator.evenly_spaced_border_combination(n, k)
+        border_set = {(min(a, b), max(a, b)) for a, b in borders}
+        enumerate_ncsts_helper(list(range(n)), borders, set(border_set))
+
+        print(f"\nGenerated {len(all_trees)} unique NCSTs with shared borders.")
+        print("Beginning pairwise comparisons...")
+
+        # Prepare all pairs once
+        pairs = list(combinations(range(len(all_trees)), 2))
+        num_pairs = len(pairs)
+        Visualizer.print_progress_bar(0, num_pairs)
+
+        # Shared state
+        best_result = {
+            "gamma": 1,
+            "pair": ([], []),
+            "four_nine_count": 0,
+            "four_nine_list": []
+        }
+
+        pairs = list(combinations(range(len(all_trees)), 2))
+        tasks = [(i, j, all_trees) for (i, j) in pairs]
+
+        with ProcessPoolExecutor() as executor:
+            for idx, result in enumerate(executor.map(analyze_tree_pair_static, tasks)):
+                i, j, gamma = result
+                Visualizer.print_progress_bar(idx + 1, len(tasks))
+
+                if gamma is None:
+                    continue
+
+                t1, t2 = all_trees[i], all_trees[j]
+
+                if gamma < best_result["gamma"]:
+                    best_result["gamma"] = gamma
+                    best_result["pair"] = (t1, t2)
+
+                if gamma <= 4 / 9:
+                    best_result["four_nine_count"] += 1
+                    best_result["four_nine_list"].append(t1)
+
+                if gamma < 4 / 9:
+                    print("\n✅✅✅FOUND BETTER GAMMA✅✅✅", flush=True)
+                    print(f"Gamma = {gamma}", flush=True)
+                    print(f"Used {sorted(t1)} and {sorted(t2)}", flush=True)
+                    exit()
+
+        print(f"\nPairwise comparison complete.")
+        print(f"Total pairs tested: {num_pairs}")
+        print(f"Best gamma: {best_result['gamma']}")
+        print(f"Found on trees: {best_result['pair'][0]} and {best_result['pair'][1]}")
+        print(f"Number of 4/9 or better: {best_result['four_nine_count']}")
+        print(f"All 4/9 or better: {best_result['four_nine_list']}")
+
+        if test and plot:
+            self.gamma_analyzer.analyze_tree_pair(
+                best_result["pair"][0], best_result["pair"][1], verbose=False
+            )
+
+
+def analyze_tree_pair_static(args):
+    i, j, all_trees = args
+    t1, t2 = all_trees[i], all_trees[j]
+
+    gamma_analyzer = GammaAnalyzer()  # If you can safely instantiate it here
+    gamma, _, _, _, _ = gamma_analyzer.analyze_tree_pair(t1, t2, verbose=False, plot=False)
+    return (i, j, gamma)

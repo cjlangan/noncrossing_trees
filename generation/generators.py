@@ -67,5 +67,4 @@ class NCSTGenerator:
             num_border = TreeUtils.count_border_edges(edges, n)
             if num_border == k:
                 return edges, seed
-        raise RuntimeError(f"No NCST with exactly {
-                           k} border edges found after {max_tries} tries.")
+        raise RuntimeError(f"No NCST with exactly {k} border edges found after {max_tries} tries.")

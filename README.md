@@ -2,7 +2,7 @@
 
 Various code to explore the bounds of the flip distance between non-crossing trees in convex position.
 
-We specifically aim to find a pair of tree with a new best-know confliction value $\gamma$.
+We specifically aim to find a pair of trees with a new best-know confliction value $\gamma$ as defined in "Flipping Non-Crossing Spanning Trees" by Bjerkevik et. al.
 
 ## Setup
 
@@ -12,39 +12,21 @@ We specifically aim to find a pair of tree with a new best-know confliction valu
 
 ### Installation
 
-1. **Clone the repository:** TODO: Update this after the repo is done
-   ```bash
-   git clone <repository-url>
-   cd reconfiguration-non-crossing-spanning-trees
-   ```
+```bash
+git clone https://github.com/cjlangan/noncrossing_trees
+cd reconfiguration-non-crossing-spanning-trees && make
+```
 
-2. **Create and activate virtual environment:**
-   ```bash
-   python -m venv Scripts/venv
-   source Scripts/venv/bin/activate  # On Windows: Scripts\venv\Scripts\activate
-   ```
-
-3. **Install dependencies:**
-   ```bash
-   cd Scripts
-   make install-deps  # If requirements.txt exists
-   # OR manually:
-   # pip install -r requirements.txt
-   ```
-
-4. **Install in development mode (optional):**
-   ```bash
-   make install-dev
-   ```
+- This will automatically create a virtual environment, install requirements, and run the program.
 
 ## Usage
 
 ### Using the Makefile (Recommended)
 
-Navigate to the Scripts directory and use the provided Makefile:
+Navigate to the noncrossing_trees directory and use the provided Makefile:
 
 ```bash
-cd Scripts
+cd noncrossing_trees
 
 # Run the main application
 make run
@@ -63,30 +45,29 @@ make debug
 
 | Command | Description |
 |---------|-------------|
-| `make run` | Run Scripts.main as module (recommended) |
+| `make run` | Run noncrossing_trees.main as module (recommended) |
 | `make run-direct` | Run main.py directly with PYTHONPATH |
-| `make run-local` | Run from Scripts directory |
+| `make run-local` | Run from noncrossing_trees directory |
 | `make demo` | Run the demonstration script |
 | `make install-dev` | Install package in development mode |
 | `make install-deps` | Install dependencies from requirements.txt |
-| `make check-venv` | Verify virtual environment exists |
+| `make check-venv` | Verify virtual environment exists, else creates one |
 | `make activate` | Show command to activate virtual environment |
 | `make clean` | Clean Python cache files |
 | `make debug` | Show project info and structure |
 | `make help` | Show all available commands |
 
-### Manual Execution
 
-If you prefer not to use the Makefile:
+## Manually Running
+
+If you prefer to not use the Makefile, you can install and run without it:
 
 ```bash
-# From project root
-cd reconfiguration-non-crossing-spanning-trees
-PYTHONPATH=. Scripts/venv/bin/python -m Scripts.main
-
-# Or activate virtual environment first
-source Scripts/venv/bin/activate
-python -m Scripts.main
+cd noncrossing_trees/
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+cd .. && python -m noncrossing_trees.main
 ```
 
 ## Development
@@ -96,17 +77,19 @@ python -m Scripts.main
 The project uses Python's module system with proper package structure. Imports follow this pattern:
 
 ```python
-# From within Scripts package
+# From within noncrossing_trees package
 from .analysis import GammaAnalyzer
-from .core import SomeClass
+from .core import TreeUtils
 ```
 
 ### Adding New Features
 
-1. Create new modules in the `Scripts/` directory
+1. Create new modules in the `noncrossing_trees/` directory
 2. Add `__init__.py` files for new subdirectories
 3. Use relative imports within the package
-4. Update the Makefile if new entry points are needed
+4. Create a demo file in the `examples/` directory that uses your feature
+5. Edit `__init__.py` in the `examples/` directory to add your demo
+6. Update the main.py to use your demo file
 
 ## Troubleshooting
 
@@ -116,17 +99,17 @@ If you encounter import errors like `ImportError: attempted relative import with
 
 1. **Use the Makefile**: `make run` handles Python path correctly
 2. **Check virtual environment**: `make check-venv`
-3. **Use module execution**: `python -m Scripts.main` instead of `python main.py`
+3. **Use module execution**: `python -m noncrossing_trees.main` instead of `python main.py`
 4. **Verify project structure**: `make debug`
 
 ### Virtual Environment Issues
 
 ```bash
 # Recreate virtual environment
-rm -rf Scripts/venv
-python -m venv Scripts/venv
-source Scripts/venv/bin/activate
-pip install -r requirements.txt  # if exists
+rm -rf venv
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
 ```
 
 ### LSP/IDE Configuration
@@ -143,11 +126,15 @@ For proper IDE support with imports, consider:
 2. Add new functionality to appropriate modules
 3. Update this README for significant changes
 4. Test using the provided Makefile commands
+5. Submit a detailed PR
 
 ## License
 
-TODO: [Add license information here]
+TODO: [Add license information here when public]
 
 ## Contact
 
-TODO: [Add contact information or research group details here]
+First Last | Email 
+---- | -----
+Connor Langan | langanc@myumanitoba.ca
+Atishaya | maharjaa@myumanitoba.ca
