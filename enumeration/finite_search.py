@@ -1,4 +1,4 @@
-from typing import List, Tuple, Set, FrozenSet, Any, Iterator
+from typing import List, Tuple, Set, FrozenSet, Any, Iterator, Optional
 import multiprocessing
 from multiprocessing.sharedctypes import Synchronized
 from concurrent.futures import ProcessPoolExecutor
@@ -415,7 +415,7 @@ class FiniteGammaSearcher:
             self.gamma_analyzer.analyze_tree_pair(best_trees[0], best_trees[1], verbose=False)
 
 
-    def enumerate_even_shared_full_parallel(self, n: int, k: int, test: bool = True, plot: bool = True):
+    def enumerate_even_shared_full_parallel(self, n: int, k: int, num_workers: Optional[int] = None, test: bool = True, plot: bool = True):
         print(f"Generating all NCSTs with {n} vertices and {k} evenly-spaced shared border edges...")
 
         seen: Set[frozenset[Tuple[int, int]]] = set()
@@ -459,12 +459,11 @@ class FiniteGammaSearcher:
         print(f"\nGenerated {len(all_trees)} unique NCSTs with shared borders.")
         print("Beginning pairwise comparisons...")
 
-        # Prepare all pairs once
         pairs = list(combinations(range(len(all_trees)), 2))
-        num_pairs = len(pairs)
+        tasks = [(i, j, all_trees[i], all_trees[j]) for (i, j) in pairs]
+        num_pairs = len(tasks)
         Visualizer.print_progress_bar(0, num_pairs)
 
-        # Shared state
         best_result = {
             "gamma": 1,
             "pair": ([], []),
@@ -472,13 +471,12 @@ class FiniteGammaSearcher:
             "four_nine_list": []
         }
 
-        pairs = list(combinations(range(len(all_trees)), 2))
-        tasks = [(i, j, all_trees) for (i, j) in pairs]
+        worker_count = num_workers or max(1, multiprocessing.cpu_count() // 2)
 
-        with ProcessPoolExecutor() as executor:
+        with ProcessPoolExecutor(max_workers=worker_count) as executor:
             for idx, result in enumerate(executor.map(analyze_tree_pair_static, tasks)):
                 i, j, gamma = result
-                Visualizer.print_progress_bar(idx + 1, len(tasks))
+                Visualizer.print_progress_bar(idx + 1, num_pairs)
 
                 if gamma is None:
                     continue
@@ -513,9 +511,7 @@ class FiniteGammaSearcher:
 
 
 def analyze_tree_pair_static(args):
-    i, j, all_trees = args
-    t1, t2 = all_trees[i], all_trees[j]
-
-    gamma_analyzer = GammaAnalyzer()  # If you can safely instantiate it here
+    i, j, t1, t2 = args
+    gamma_analyzer = GammaAnalyzer()
     gamma, _, _, _, _ = gamma_analyzer.analyze_tree_pair(t1, t2, verbose=False, plot=False)
     return (i, j, gamma)
