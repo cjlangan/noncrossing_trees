@@ -98,3 +98,23 @@ class TreeUtils:
     def count_border_edges(edges: List[Tuple[int, int]], n: int) -> int:
         """Count number of border (hull) edges."""
         return sum(1 for u, v in edges if TreeUtils.is_hull_edge(u, v, n))
+    
+    @staticmethod
+    def get_border_edges(tree: List[Tuple[int, int]], n: int) -> List[Tuple[int, int]]:
+        """Get the border edges of a tree."""
+        return set((min(u, v), max(u, v)) for u, v in tree if TreeUtils.is_hull_edge(u, v, n))
+
+    @staticmethod
+    def trees_share_borders(t1: List[Tuple[int, int]], t2: List[Tuple[int, int]]) -> bool:
+        # Check if two trees have the same border edges and the other edges are distinct
+        border1 = TreeUtils.get_border_edges(t1, len(t1) + 1)
+        border2 = TreeUtils.get_border_edges(t2, len(t2) + 1)
+        if border1 != border2:
+            return False
+        edges1 = set(TreeUtils.normalize_edges(t1))
+        edges2 = set(TreeUtils.normalize_edges(t2))
+        # Remove border edges from both sets
+        edges1 -= border1
+        edges2 -= border2
+        # Check if the remaining edges are distinct
+        return edges1.isdisjoint(edges2)

@@ -7,8 +7,8 @@ class ConfinedEdgeGenerator:
         """Generate k evenly spaced unique borders on n points, including (n-1, 0)"""
         if k == 0:
             return []
-        if n % k != 0:
-            raise ValueError(f"k = {k} must divide n = {n} evenly")
+        #if n % k != 0:
+        #    raise ValueError(f"k = {k} must divide n = {n} evenly")
 
         step = n // k
         # Shift all indices back by 1 to include (n-1, 0)

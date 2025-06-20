@@ -6,3 +6,5 @@ scipy
 matplotlib
 more_itertools
 tqdm
+ortools
+pyscipopt

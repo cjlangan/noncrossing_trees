@@ -3,13 +3,15 @@ import multiprocessing
 from multiprocessing.sharedctypes import Synchronized
 from concurrent.futures import ProcessPoolExecutor
 from itertools import combinations
-
+import os
 from ..analysis import GammaAnalyzer
 from ..visualization import Visualizer
 from ..formulas import NCSTFormulas
 from ..generation import NecklaceGenerator, ConfinedEdgeGenerator
 from ..core import TreeUtils
+from ..optimization import OptimizationSolver
 
+global_all_trees: List[List[Tuple[int, int]]] = []
 
 class FiniteGammaSearcher:
     """Enumerative searcher for all NCSTs, with restrictions"""
@@ -17,6 +19,7 @@ class FiniteGammaSearcher:
     def __init__(self):
         self.gamma_analyzer = GammaAnalyzer()
         self.visualizer = Visualizer()
+        self.optimizer = OptimizationSolver()
         self.shared_counter: Synchronized
         self.total_trees = None
 
@@ -369,13 +372,19 @@ class FiniteGammaSearcher:
         four_nine_gamma_counter = 0
         four_nine_list: List[List[Tuple[int, int]]] = []
 
-        num_pairs = (len(all_trees) * (len(all_trees) - 1)) // 2
+        num_pairs = 0
         pair_counter = 0
+        for i in range(len(all_trees)):
+            for j in range(i + 1, len(all_trees)):
+                if TreeUtils.trees_share_borders(all_trees[i], all_trees[j]):
+                    num_pairs += 1
 
         Visualizer.print_progress_bar(0, num_pairs)
 
         for i in range(len(all_trees)):
             for j in range(i + 1, len(all_trees)):
+                if not TreeUtils.trees_share_borders(all_trees[i], all_trees[j]):
+                    continue
                 t1 = all_trees[i]
                 t2 = all_trees[j]
                 pair_counter += 1
@@ -460,9 +469,22 @@ class FiniteGammaSearcher:
         print("Beginning pairwise comparisons...")
 
         # Prepare all pairs once
-        pairs = list(combinations(range(len(all_trees)), 2))
+        
+        dict = {}
+        for i in range(len(all_trees)):
+            border_edges = frozenset(TreeUtils.get_border_edges(all_trees[i], n))
+            if border_edges not in dict:
+                dict[border_edges] = []
+            dict[border_edges].append(i)
+        pairs = []
+        for border_edges, indices in dict.items():
+            if len(indices) < 2:
+                continue
+            for i, j in combinations(indices, 2):
+                if TreeUtils.trees_share_borders(all_trees[i], all_trees[j]):
+                    pairs.append((i, j))
         num_pairs = len(pairs)
-        Visualizer.print_progress_bar(0, num_pairs)
+        print(f"Total pairs to compare: {num_pairs}")
 
         # Shared state
         best_result = {
@@ -472,10 +494,11 @@ class FiniteGammaSearcher:
             "four_nine_list": []
         }
 
-        pairs = list(combinations(range(len(all_trees)), 2))
-        tasks = [(i, j, all_trees) for (i, j) in pairs]
+        tasks = pairs
 
-        with ProcessPoolExecutor() as executor:
+        print(f"Starting pairwise comparisons in parallel...")
+
+        with ProcessPoolExecutor(initializer=init_workers, initargs=(all_trees,)) as executor:
             for idx, result in enumerate(executor.map(analyze_tree_pair_static, tasks)):
                 i, j, gamma = result
                 Visualizer.print_progress_bar(idx + 1, len(tasks))
@@ -511,11 +534,14 @@ class FiniteGammaSearcher:
                 best_result["pair"][0], best_result["pair"][1], verbose=False
             )
 
+# Init workers with global_all_trees
+def init_workers(trees: List[List[Tuple[int, int]]]):
+    global global_all_trees
+    global_all_trees = trees
 
 def analyze_tree_pair_static(args):
-    i, j, all_trees = args
-    t1, t2 = all_trees[i], all_trees[j]
-
+    i, j = args
+    t1, t2 = global_all_trees[i], global_all_trees[j]
     gamma_analyzer = GammaAnalyzer()  # If you can safely instantiate it here
     gamma, _, _, _, _ = gamma_analyzer.analyze_tree_pair(t1, t2, verbose=False, plot=False)
     return (i, j, gamma)

@@ -1,31 +1,52 @@
-import pulp
 import networkx as nx
 from typing import List
-
+from ortools.sat.python import cp_model
+import math
 
 class OptimizationSolver:
     """Solver for optimization problems on conflict graphs."""
 
     @staticmethod
-    def find_largest_acyclic_subgraph(H: nx.DiGraph) -> List[int]:
-        """Find the largest acyclic subgraph using integer programming."""
-        model = pulp.LpProblem("MaxAcyclicSubgraph", pulp.LpMaximize)
+    def find_largest_acyclic_subgraph(H: nx.DiGraph, gamma: float = 4/9) -> List[int]:
+        """Find the largest acyclic subgraph using CP-SAT solver from OR-Tools.
+        Stops early if an acyclic subgraph with size > gamma * n is found. 
+        Set gamma to 1.0 to disable threshold."""
 
-        # Decision variables
-        x = {v: pulp.LpVariable(f"x_{v}", cat="Binary") for v in H.nodes}
-        order = {v: pulp.LpVariable(f"order_{v}", lowBound=0,
-                                    upBound=len(H.nodes)-1, cat="Integer")
-                 for v in H.nodes}
+        class ThresholdStopCallback(cp_model.CpSolverSolutionCallback):
+            def __init__(self, x_vars, threshold):
+                super().__init__()
+                self.x_vars = x_vars
+                self.threshold = threshold
+                self.best_solution = None
 
-        # Objective: maximize included nodes
-        model += pulp.lpSum(x[v] for v in H.nodes)
+            def on_solution_callback(self):
+                current_size = sum(self.Value(x) for x in self.x_vars.values())
+                if current_size > self.threshold:
+                    self.best_solution = [v for v, x in self.x_vars.items() if self.Value(x) > 0]
+                    self.StopSearch()
 
-        # Acyclicity constraints
-        M = len(H.nodes)
+        model = cp_model.CpModel()
+        n = len(H.nodes)
+        nodes = list(H.nodes)
+        threshold = math.ceil(gamma * n)
+
+        x = {v: model.NewBoolVar(f"x_{v}") for v in nodes}
+        order = {v: model.NewIntVar(0, n - 1, f"order_{v}") for v in nodes}
+
+        model.Maximize(sum(x[v] for v in nodes))
+
+        M = n
         for u, v in H.edges():
-            model += order[u] + 1 <= order[v] + M * (2 - x[u] - x[v])
+            model.Add(order[u] + 1 <= order[v] + M * (2 - x[u] - x[v]))
 
-        # Solve quietly
-        model.solve(pulp.PULP_CBC_CMD(msg=False))
+        solver = cp_model.CpSolver()
+        callback = ThresholdStopCallback(x, threshold)
+        status = solver.SolveWithSolutionCallback(model, callback)
 
-        return [v for v in H.nodes if x[v].varValue == 1]
+        if callback.best_solution is not None:
+            return callback.best_solution
+
+        if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
+            return [v for v in nodes if solver.Value(x[v]) > 0]
+
+        return []

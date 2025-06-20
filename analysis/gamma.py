@@ -6,7 +6,7 @@ from ..optimization import OptimizationSolver
 from ..visualization import Visualizer
 from ..core import TreeUtils
 from ..generation import NCSTGenerator
-
+import os
 
 class GammaAnalyzer:
     """Main analyzer for computing gamma values between tree pairs."""
@@ -59,6 +59,7 @@ class GammaAnalyzer:
             self.visualizer.plot_linear_graph(
                 T_i, T_f, E_i, E_f, "linear_graph.png")
             self.visualizer.plot_conflict_graph(H, "conflict_graph.png")
+
 
         return gamma, ac_h, E_i, E_f, H
 
