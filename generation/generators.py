@@ -88,10 +88,9 @@ class NCSTGenerator:
         # We forcefully include (0, n-1)
         borders = [(0, n-1)] + random.sample(all_borders, k-1)
 
-        print("Borders:", borders)
-
         # Add border to all edges
         edges = borders.copy()
+        print("edges:", edges)
 
         # Helper function for recursivley choosing all chords randomly
         def choose_chords(points: List[int], local_edges: List[Tuple[int, int]]):
@@ -100,26 +99,82 @@ class NCSTGenerator:
             # Base case: have a tree
             if len(local_edges) == len(points) - 1:
                 return
+            # Base case: possibility for impossible point choice
+            # === WRONG: FOUND WHOLE FAMILY OF IMPOSSIBLE CASES ===
+            if len(local_edges) == len(points) - 2:
+                # Determine points used in edges
+                points_used = set()
+                for a, b in local_edges:
+                    points_used.add(a)
+                    points_used.add(b)
+
+                # Determine if there is an isolated point
+                for point in points:
+                    # If so, it must be included in the final chord
+                    if point not in points_used:
+                        # Choose endpoint to be at least 2 away
+                        a_idx = points.index(point)
+                        b_idx = random.choice(points[a_idx-2:a_idx+2])
+
+                        # Add final chord to edges, then we are done
+                        edges = edges + [(points[a_idx], points[b_idx])]
+                        return
 
             # Recursive case: Choose a chord and split into subproblems
 
-            # First choose chord start point
+            # First choose chord start point, can be any
             P = len(points) # number of local points
             start_idx = random.randrange(P)
-            left_idx = start_idx - 1 if start_idx > 0 else P - 1
+            start_point = points[start_idx]
+            print("start point:", start_point)
 
-            # Remove that point and its neighbors from possible options
-            leftover_indicies = list(range(P))
-            leftover_indicies.remove(start_idx)
-            leftover_indicies.remove(left_idx)
-            leftover_indicies.remove((start_idx + 1) % P)
+            # Function to find first valid index for chord enpoint in specific direction
+            def find_valid_endpoint_idx(start_idx: int, dir: int) -> int:
+                # Init first edge
+                a = start_idx
+                b = (a + dir) % P
 
-            # Choose chord endpoint
-            end_idx = random.choice(leftover_indicies)
+
+                print("start:", start_idx)
+
+                border = False
+                non_border = False
+
+                # Check potential border edges until found both a border edge 
+                # and a non border edge
+                while not border or not non_border:
+                    p1 = min(points[a], points[b])
+                    p2 = max(points[a], points[b])
+                    if (p1, p2) in local_edges:
+                        border = True
+                    else:
+                        non_border = True
+
+                    # Move to next potential border edge
+                    a = b
+                    b = (a + dir) % P
+
+                # 'a' ends up being the first valid index
+                return a
+
+
+            # Find counter clockwise and clockwise beginning chord index ends
+            cc_idx = find_valid_endpoint_idx(start_idx, 1)
+            c_idx = find_valid_endpoint_idx(start_idx, -1)
+
+            print("range:", cc_idx, c_idx)
+            
+            # Create list of all valid endpoints between these points
+            # === NOT SO SIMPLE, HAVE TO BE MORE THOROUGH === 
+            valid_endpoints = points[cc_idx:(c_idx + 1) % P]
+
+            end_point = random.choice(valid_endpoints)
+            end_idx = points.index(end_point)
+
 
             # Define new chord edge and add it to edges and local edges
-            chord = (points[start_idx], points[end_idx])
-            print("Chord chosen:", chord)
+            chord = (max(start_point, end_point), min(start_point, end_point))
+            print("chord:", chord)
             edges = edges + [chord]
             new_local_edges = local_edges + [chord]
 
