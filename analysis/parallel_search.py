@@ -50,12 +50,12 @@ class ParallelGammaSearcher:
                 elif method == "r":
                     T_f = TreeUtils.rotate_tree(T_i, n // 2)
                 else:  # random
-                    if k is None:
+                    if k is None and borders is None:
                         T_f, seed_f = NCSTGenerator.generate_random_ncst(n)
                     elif borders is None:
-                        T_f, seed_f = NCSTGenerator.generate_ncst_with_k_borders( n, k)
+                        T_f, seed_f = NCSTGenerator.generate_ncst_with_k_borders(n, k)
                     else:
-                        T_f, seed_f = NCSTGenerator.generate_ncst_with_k_borders( n, given_borders=borders)
+                        T_f, seed_f = NCSTGenerator.generate_ncst_with_k_borders(n, given_borders=borders)
 
                 # Analyze the tree pair
                 curr_gamma, ac_h, E_i, E_f, H = self.analyzer.analyze_tree_pair(

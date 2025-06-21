@@ -2,7 +2,6 @@ networkx
 numpy
 pulp
 sympy
-scipy
 matplotlib
 more_itertools
 tqdm
