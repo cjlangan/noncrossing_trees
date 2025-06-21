@@ -1,6 +1,6 @@
 import multiprocessing
 from multiprocessing import Manager, Process, Event, Lock
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List, Tuple
 
 from .gamma import GammaAnalyzer
 from ..core import TreeUtils
@@ -16,7 +16,9 @@ class ParallelGammaSearcher:
 
     def _worker_process(
         self, n: int, gamma_threshold: float, method: str,
-        k: Optional[int], notable: bool, stop_event: Event,  # type: ignore
+        k: Optional[int], borders: Optional[List[Tuple[int, int]]], 
+        notable: bool, skip_half: bool, 
+        stop_event: Event,  # type: ignore
         result_holder: Dict, lock: Lock, worker_id: int  # type: ignore
     ):
         """Worker process for parallel gamma search."""
@@ -25,35 +27,35 @@ class ParallelGammaSearcher:
         while not stop_event.is_set():
             try:
                 # Generate first tree
-                if k is None:
+                if k is None and borders is None:
                     T_i, seed_i = NCSTGenerator.generate_random_ncst(n)
+                elif k is not None:
+                    T_i, seed_i = NCSTGenerator.generate_ncst_with_k_borders( n, k)
                 else:
-                    T_i, seed_i = NCSTGenerator.generate_ncst_with_k_borders(
-                        n, k)
+                    T_i, seed_i = NCSTGenerator.generate_ncst_with_k_borders( n, given_borders=borders)
+
 
                 local_tested += 1
+                seed_f = f"{method}_{seed_i}"
 
                 # Generate second tree based on method
                 if method == "rf":
                     T_f = TreeUtils.flip_tree(
                         TreeUtils.rotate_tree(T_i, n // 2))
-                    seed_f = f"{method}_{seed_i}"
                 elif method == "fr":
                     T_f = TreeUtils.rotate_tree(
                         TreeUtils.flip_tree(T_i), n // 2)
-                    seed_f = f"{method}_{seed_i}"
                 elif method == "f":
                     T_f = TreeUtils.flip_tree(T_i)
-                    seed_f = f"{method}_{seed_i}"
                 elif method == "r":
                     T_f = TreeUtils.rotate_tree(T_i, n // 2)
-                    seed_f = f"{method}_{seed_i}"
                 else:  # random
                     if k is None:
                         T_f, seed_f = NCSTGenerator.generate_random_ncst(n)
+                    elif borders is None:
+                        T_f, seed_f = NCSTGenerator.generate_ncst_with_k_borders( n, k)
                     else:
-                        T_f, seed_f = NCSTGenerator.generate_ncst_with_k_borders(
-                            n, k)
+                        T_f, seed_f = NCSTGenerator.generate_ncst_with_k_borders( n, given_borders=borders)
 
                 # Analyze the tree pair
                 curr_gamma, ac_h, E_i, E_f, H = self.analyzer.analyze_tree_pair(
@@ -82,9 +84,7 @@ class ParallelGammaSearcher:
                         result_holder['total_tested'] += local_tested
                         local_tested = 0
 
-                        if notable:
-                            print(f"Worker {worker_id}: Found gamma of {curr_gamma:.6f} = "
-                                  f"{ac_h}/{v_h} on {n} vertices with seeds {seed_i} and {seed_f}")
+                        print(f"Worker {worker_id}: Found gamma of {curr_gamma:.6f} = " f"{ac_h}/{v_h} on {n} vertices with seeds {seed_i} and {seed_f}")
 
                         stop_event.set()  # Signal all workers to stop
                         break
@@ -92,9 +92,10 @@ class ParallelGammaSearcher:
                 # Print notable results
                 elif (notable and curr_gamma is not None and
                       (curr_gamma < 0.6 or local_tested % 10000 == 0)):
-                    with lock:
-                        print(f"Worker {worker_id}: Tested {local_tested + result_holder['total_tested']}, "
-                              f"current gamma: {curr_gamma:.6f} = {ac_h}/{v_h}")
+                    if not (skip_half and curr_gamma == 0.5):
+                        with lock:
+                            print(f"Worker {worker_id}: Tested {local_tested + result_holder['total_tested']}, "
+                                  f"current gamma: {curr_gamma:.6f} = {ac_h}/{v_h}")
 
                 # Periodically update total tested count
                 if local_tested % 1000 == 0:
@@ -111,8 +112,8 @@ class ParallelGammaSearcher:
             result_holder['total_tested'] += local_tested
 
     def find_trees_with_gamma_parallel(self, n: int, gamma_threshold: float,
-                                       method: str = "random", k: Optional[int] = None,
-                                       notable: bool = True, plot: bool = True) -> Dict[str, Any]:
+                                       method: str = "random", k: Optional[int] = None, borders: Optional[List[Tuple[int, int]]] = None,
+                                       notable: bool = True, skip_half: bool = True, plot: bool = True) -> Dict[str, Any]:
         """
         Parallel search for tree pairs meeting gamma threshold.
 
@@ -143,8 +144,9 @@ class ParallelGammaSearcher:
         workers = []
         for worker_id in range(self.num_workers):
             p = Process(target=self._worker_process,
-                        args=(n, gamma_threshold, method, k, notable,
-                              stop_event, result_holder, lock, worker_id))
+                        args=(n, gamma_threshold, method, k, borders, notable, 
+                              skip_half, stop_event, result_holder, lock, 
+                              worker_id))
             p.start()
             workers.append(p)
 
