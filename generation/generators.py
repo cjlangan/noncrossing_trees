@@ -1,7 +1,9 @@
+import networkx as nx
 import random
 import secrets
 import numpy as np
 from typing import List, Tuple, Optional
+from itertools import chain
 
 from ..core import TreeUtils
 
@@ -70,72 +72,56 @@ class NCSTGenerator:
         raise RuntimeError(f"No NCST with exactly {k} border edges found after {max_tries} tries.")
 
 
-    # WORK IN PROGRESS:
-    # NEED TO CONSIDER ALL POSSIBLE CHORDS, SINCE YOU CAN HIT IMPOSSIBLE CASES
     @staticmethod
-    def generate_ncst_with_k_borders( n: int, k: int, seed: Optional[int] = None) -> Tuple[List[Tuple[int, int]], int]:
+    def generate_ncst_with_k_borders( n: int, k: Optional[int] = None, seed: Optional[int] = None, given_borders: Optional[List[Tuple[int, int]]] = None) -> Tuple[List[Tuple[int, int]], int]:
         """Generate random NCST with exactly k border edges by recursive approach"""
         if seed is None:
             seed = secrets.randbits(32)
 
         random.seed(seed)
         np.random.seed(seed)
+        borders = given_borders if given_borders is not None else []
 
-        # Get all borders that aren't (0, n-1)
-        all_borders = [(i, i+1) for i in range(0, n-1)]
+        # If no given borders, randomly choose them
+        if given_borders is None and k is not None:
+            # Get all borders that aren't (0, n-1)
+            all_borders = [(i, i+1) for i in range(0, n-1)]
 
-        # Choose k-1 random borders that arent (0, n-1)
-        # We forcefully include (0, n-1)
-        borders = [(0, n-1)] + random.sample(all_borders, k-1)
+            # Choose k-1 random borders that arent (0, n-1)
+            # We forcefully include (0, n-1)
+            borders = [(0, n-1)] + random.sample(all_borders, k-1)
 
-        # Add border to all edges
         edges = borders.copy()
-        print("edges:", edges)
 
         # Helper function for recursivley choosing all chords randomly
         def choose_chords(points: List[int], local_edges: List[Tuple[int, int]]):
             nonlocal edges
 
+
             # Base case: have a tree
             if len(local_edges) == len(points) - 1:
                 return
-            # Base case: possibility for impossible point choice
-            # === WRONG: FOUND WHOLE FAMILY OF IMPOSSIBLE CASES ===
-            if len(local_edges) == len(points) - 2:
-                # Determine points used in edges
-                points_used = set()
-                for a, b in local_edges:
-                    points_used.add(a)
-                    points_used.add(b)
 
-                # Determine if there is an isolated point
-                for point in points:
-                    # If so, it must be included in the final chord
-                    if point not in points_used:
-                        # Choose endpoint to be at least 2 away
-                        a_idx = points.index(point)
-                        b_idx = random.choice(points[a_idx-2:a_idx+2])
-
-                        # Add final chord to edges, then we are done
-                        edges = edges + [(points[a_idx], points[b_idx])]
-                        return
-
-            # Recursive case: Choose a chord and split into subproblems
-
-            # First choose chord start point, can be any
+            graph = nx.Graph()
+            graph.add_edges_from(local_edges)
             P = len(points) # number of local points
-            start_idx = random.randrange(P)
-            start_point = points[start_idx]
-            print("start point:", start_point)
 
-            # Function to find first valid index for chord enpoint in specific direction
+            initial_points = points.copy()
+
+            # leaves of the only path are invalid, so remove 
+            if TreeUtils.is_path_graph(graph):
+                leaves = [x for x in graph.nodes() if graph.degree(x) == 1]
+                initial_points = [item for item in points if item not in leaves]
+
+            # Choose starting point from valid points
+            start_point = random.choice(initial_points)
+            start_idx = points.index(start_point)
+
+            # Function to find first valid index for chord endpoint in specific direction
             def find_valid_endpoint_idx(start_idx: int, dir: int) -> int:
                 # Init first edge
                 a = start_idx
                 b = (a + dir) % P
-
-
-                print("start:", start_idx)
 
                 border = False
                 non_border = False
@@ -162,19 +148,27 @@ class NCSTGenerator:
             cc_idx = find_valid_endpoint_idx(start_idx, 1)
             c_idx = find_valid_endpoint_idx(start_idx, -1)
 
-            print("range:", cc_idx, c_idx)
+            def cyclic_trim(lst, a, b):
+                if not lst:
+                    return []
+                
+                n = len(lst)
+                a, b = a % n, b % n
+                
+                if a <= b:
+                    return lst[a:b+1]
+                else:
+                    return list(chain(lst[a:], lst[:b+1]))
             
             # Create list of all valid endpoints between these points
             # === NOT SO SIMPLE, HAVE TO BE MORE THOROUGH === 
-            valid_endpoints = points[cc_idx:(c_idx + 1) % P]
+            valid_endpoints = cyclic_trim(points, cc_idx, c_idx)
 
             end_point = random.choice(valid_endpoints)
             end_idx = points.index(end_point)
 
-
             # Define new chord edge and add it to edges and local edges
-            chord = (max(start_point, end_point), min(start_point, end_point))
-            print("chord:", chord)
+            chord = (min(start_point, end_point), max(start_point, end_point))
             edges = edges + [chord]
             new_local_edges = local_edges + [chord]
 
@@ -182,8 +176,8 @@ class NCSTGenerator:
             a_idx, b_idx = sorted((start_idx, end_idx))
 
             # Define points between and outside of chosen chord
-            between = points[a_idx + 1:b_idx]
-            outside = points[:a_idx + 1] + points[b_idx:]
+            between = cyclic_trim(points, a_idx, b_idx)
+            outside = cyclic_trim(points, b_idx, a_idx)
 
             # Determine edges in point range for subproblems
             between_edges = [e for e in new_local_edges if e[0] in between and e[1] in between]

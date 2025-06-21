@@ -98,3 +98,44 @@ class TreeUtils:
     def count_border_edges(edges: List[Tuple[int, int]], n: int) -> int:
         """Count number of border (hull) edges."""
         return sum(1 for u, v in edges if TreeUtils.is_hull_edge(u, v, n))
+
+
+    @staticmethod
+    def is_path_graph(graph):
+        """
+        Check if a graph is a path (linear chain of nodes).
+        
+        A path graph has these properties:
+        1. Connected graph
+        2. Exactly 2 nodes with degree 1 (endpoints)
+        3. All other nodes have degree 2 (middle nodes)
+        4. No cycles
+        """
+        if len(graph.nodes()) == 0:
+            return False
+        
+        if len(graph.nodes()) == 1:
+            return True  # Single node is trivially a path
+        
+        if len(graph.nodes()) == 2:
+            return len(graph.edges()) == 1  # Two nodes connected by one edge
+        
+        # Check if connected
+        if not nx.is_connected(graph):
+            return False
+        
+        # Count degrees
+        degrees = [graph.degree(n) for n in graph.nodes()]
+        degree_counts = {}
+        for d in degrees:
+            degree_counts[d] = degree_counts.get(d, 0) + 1
+        
+        # Path graph must have:
+        # - Exactly 2 nodes of degree 1 (endpoints)
+        # - All other nodes of degree 2 (middle nodes)
+        # - No nodes of degree > 2
+        
+        return (degree_counts.get(1, 0) == 2 and 
+                degree_counts.get(2, 0) == len(graph.nodes()) - 2 and
+                max(degrees) <= 2)
+

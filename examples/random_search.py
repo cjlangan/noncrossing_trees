@@ -1,20 +1,21 @@
 from ..analysis import ParallelGammaSearcher
-from ..visualization import Visualizer
-from ..generation import NCSTGenerator
+from ..generation import ConfinedEdgeGenerator
 
 def random_search_demo():
     parallel_searcher = ParallelGammaSearcher()
 
-    # parallel_searcher.find_trees_with_gamma_parallel(
-    #         20,     # number of vertices
-    #         .499,   # gamma value we want, or better
-    #         "r",    # tree operation applied to second tree (flip)
-    #         k = 4,  # number of border edges (optional)
-    #         notable = True,     # option to print notable values
-    #         plot = True         # option to plot graphs when done
-    # )
+    bord = ConfinedEdgeGenerator.evenly_spaced_border_combination(12, 4)
 
-    Visualizer.print_tree(NCSTGenerator.generate_ncst_with_k_borders(6, 2)[0])
+    parallel_searcher.find_trees_with_gamma_parallel(
+            12,     # number of vertices
+            .499,   # gamma value we want, or better
+            method="r",         # tree operation applied to second tree (flip)
+            # k = 3,            # number of border edges (optional)
+            borders = bord,     # optionally get specific border edges
+            notable = True,     # option to print notable values
+            skip_half = True,   # option skip print .5 gammas
+            plot = True         # option to plot graphs when done
+    )
 
 if __name__ == "__main__":
     random_search_demo()
