@@ -1,5 +1,5 @@
 VENV_PATH := venv
-PYTHON := $(VENV_PATH)/bin/python
+PYTHON := $(VENV_PATH)/bin/python3
 PIP := $(VENV_PATH)/bin/pip
 PROJECT_NAME := noncrossing_trees
 PROJECT_ROOT := $(shell pwd)/..
@@ -37,9 +37,8 @@ check-venv:
 	@if [ ! -d "$(VENV_PATH)" ]; then \
 		echo "Virtual environment not found at $(VENV_PATH)"; \
 		echo "Creating one..."; \
-		python -m venv venv && source venv/bin/activate \
-		install-deps \
-		exit 1; \
+		python3 -m venv $(VENV_PATH); \
+		$(MAKE) install-deps; \
 	else \
 		echo "Virtual environment found at $(VENV_PATH)"; \
 		if [ ! -f "$(PYTHON)" ]; then \
@@ -48,10 +47,7 @@ check-venv:
 		fi; \
 		echo "Using Python executable: $(PYTHON)"; \
 		echo "Using PIP executable: $(PIP)"; \
-		$(PIP) install --upgrade pip; \
-		$(PIP) install -U setuptools; \
-		$(PIP) install -U wheel; \
-		source $(VENV_PATH)/bin/activate; \
+		$(PIP) install --upgrade pip setuptools wheel; \
 	fi
 
 # Install requirements if requirements.txt exists

@@ -2,6 +2,7 @@ import networkx as nx
 import numpy as np
 from typing import List, Tuple
 from .data_structures import UnionFind
+from itertools import chain
 
 
 class TreeUtils:
@@ -139,3 +140,17 @@ class TreeUtils:
                 degree_counts.get(2, 0) == len(graph.nodes()) - 2 and
                 max(degrees) <= 2)
 
+
+    @staticmethod
+    def cyclic_trim(points, a, b):
+        """Trim a list as if it were cyclic"""
+        if not points:
+            return []
+        
+        n = len(points)
+        a, b = a % n, b % n
+        
+        if a <= b:
+            return points[a:b+1]
+        else:
+            return list(chain(points[a:], points[:b+1]))

@@ -3,7 +3,6 @@ import random
 import secrets
 import numpy as np
 from typing import List, Tuple, Optional
-from itertools import chain
 
 from ..core import TreeUtils
 
@@ -148,21 +147,8 @@ class NCSTGenerator:
             cc_idx = find_valid_endpoint_idx(start_idx, 1)
             c_idx = find_valid_endpoint_idx(start_idx, -1)
 
-            def cyclic_trim(lst, a, b):
-                if not lst:
-                    return []
-                
-                n = len(lst)
-                a, b = a % n, b % n
-                
-                if a <= b:
-                    return lst[a:b+1]
-                else:
-                    return list(chain(lst[a:], lst[:b+1]))
-            
             # Create list of all valid endpoints between these points
-            # === NOT SO SIMPLE, HAVE TO BE MORE THOROUGH === 
-            valid_endpoints = cyclic_trim(points, cc_idx, c_idx)
+            valid_endpoints = TreeUtils.cyclic_trim(points, cc_idx, c_idx)
 
             end_point = random.choice(valid_endpoints)
             end_idx = points.index(end_point)
@@ -176,8 +162,8 @@ class NCSTGenerator:
             a_idx, b_idx = sorted((start_idx, end_idx))
 
             # Define points between and outside of chosen chord
-            between = cyclic_trim(points, a_idx, b_idx)
-            outside = cyclic_trim(points, b_idx, a_idx)
+            between = TreeUtils.cyclic_trim(points, a_idx, b_idx)
+            outside = TreeUtils.cyclic_trim(points, b_idx, a_idx)
 
             # Determine edges in point range for subproblems
             between_edges = [e for e in new_local_edges if e[0] in between and e[1] in between]
