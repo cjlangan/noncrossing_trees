@@ -149,7 +149,7 @@ TODO: [Add license information here when public]
 
 ## Contact
 
-First Last | Email 
+Name | Email 
 ---- | -----
 Connor Langan | langanc@myumanitoba.ca
 Atishaya | maharjaa@myumanitoba.ca
