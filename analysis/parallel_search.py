@@ -64,7 +64,7 @@ class ParallelGammaSearcher:
                 v_h = len(H.nodes) if H.nodes else 0
 
                 # Check if we found a better gamma
-                if curr_gamma is not None and curr_gamma <= gamma_threshold:
+                if curr_gamma is not None and curr_gamma <= gamma_threshold and not (skip_half and curr_gamma == 0.5):
                     with lock:
                         # Double-check that no other worker found a better result
                         if ('curr_gamma' not in result_holder or
