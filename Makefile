@@ -10,7 +10,7 @@ SCRIPTS_DIR := .
 # Run main.py as a module (recommended)
 run: check-venv
 	@echo "Running $(PROJECT_NAME).main as module with virtual environment..."
-	cd .. && python -m $(PROJECT_NAME).main
+	cd .. && $(PROJECT_NAME)/$(PYTHON) -m $(PROJECT_NAME).main
 
 # Alternative: Run main.py directly with PYTHONPATH
 run-direct: check-venv
@@ -32,7 +32,6 @@ install-dev: check-venv
 	@echo "Installing package in development mode..."
 	cd .. && Scripts/$(PIP) install -e .
 
-
 # Check if virtual environment exists
 check-venv:
 	@if [ ! -d "$(VENV_PATH)" ]; then \
@@ -41,6 +40,18 @@ check-venv:
 		python -m venv venv && source venv/bin/activate \
 		install-deps \
 		exit 1; \
+	else \
+		echo "Virtual environment found at $(VENV_PATH)"; \
+		if [ ! -f "$(PYTHON)" ]; then \
+			echo "Python executable not found in virtual environment, please recreate it."; \
+			exit 1; \
+		fi; \
+		echo "Using Python executable: $(PYTHON)"; \
+		echo "Using PIP executable: $(PIP)"; \
+		$(PIP) install --upgrade pip; \
+		$(PIP) install -U setuptools; \
+		$(PIP) install -U wheel; \
+		source $(VENV_PATH)/bin/activate; \
 	fi
 
 # Install requirements if requirements.txt exists
