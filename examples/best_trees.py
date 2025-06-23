@@ -1,4 +1,5 @@
 from ..analysis import GammaAnalyzer
+from ..core import TreeUtils
 
 def best_trees_demo():
     gamma_analyzer = GammaAnalyzer()
@@ -12,6 +13,11 @@ def best_trees_demo():
            (2, 4), (3, 4), (6, 8), (5, 8), (0, 10)]
     T_f = [(6, 2), (11, 2), (10, 7), (11, 0), (10, 6),
            (4, 3), (9, 7), (8, 7), (5, 3), (6, 3), (11, 1)]
+
+
+    # T_i = [(3, 5), (0, 5), (1, 2), (0, 7), (1, 3), (3, 4), (0, 6)]
+    # T_f = TreeUtils.flip_tree(T_i)
+    # T_f = [(5, 2), (9, 2), (8, 6), (9, 0), (8, 5), (5, 6), (2, 3), (5, 3), (9, 1)]
 
     print("=== Analyzing Best Known Tree Pair (gamma ≈ 0.44444444, n=12) ===")
     gamma_analyzer.analyze_tree_pair(T_i, T_f, verbose=True, plot=True)

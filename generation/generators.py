@@ -93,7 +93,7 @@ class NCSTGenerator:
 
         edges = borders.copy()
 
-        # Helper function for recursivley choosing all chords randomly
+        # Helper function for recursively choosing all chords randomly
         def choose_chords(points: List[int], local_edges: List[Tuple[int, int]]):
             nonlocal edges
 
