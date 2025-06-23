@@ -1,4 +1,6 @@
+import networkx as nx
 from typing import List, Tuple
+
 
 
 class ConflictAnalyzer:
@@ -93,3 +95,18 @@ class ConflictAnalyzer:
                         conflict_edges.append((g_i, g_j, 3))
 
         return conflict_edges
+
+    @staticmethod
+    def get_conflict_graph(
+        conflict_vertices: List[int],
+        conflict_edges: List[Tuple[int, int, int]],
+    )-> nx.Graph:
+        """Construct the conflict graph from edges and vertices."""
+
+        H = nx.Graph()
+        H.add_nodes_from(conflict_vertices)
+
+        for u, v, edge_type in conflict_edges:
+            H.add_edge(u, v, type=edge_type)
+
+        return H
