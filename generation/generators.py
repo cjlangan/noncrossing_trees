@@ -72,8 +72,9 @@ class NCSTGenerator:
 
 
     @staticmethod
-    def generate_ncst_with_k_borders( n: int, k: Optional[int] = None, seed: Optional[int] = None, given_borders: Optional[List[Tuple[int, int]]] = None) -> Tuple[List[Tuple[int, int]], int]:
-        """Generate random NCST with exactly k border edges by recursive approach"""
+    def generate_ncst_with_k_borders( n: int, k: Optional[int] = None, seed: Optional[int] = None, 
+                                     given_borders: Optional[List[Tuple[int, int]]] = None) -> Tuple[List[Tuple[int, int]], int]:
+        """Generate random NCST with exactly k border edges by recursive deterministic approach"""
         if seed is None:
             seed = secrets.randbits(32)
 
@@ -130,7 +131,8 @@ class NCSTGenerator:
                 while not border or not non_border:
                     p1 = min(points[a], points[b])
                     p2 = max(points[a], points[b])
-                    if (p1, p2) in local_edges:
+
+                    if (p1, p2) in local_edges: # THIS ASSUMES EDGE IS SORTED -> BAD
                         border = True
                     else:
                         non_border = True
