@@ -1,5 +1,5 @@
 VENV_PATH := venv
-PYTHON := $(VENV_PATH)/bin/python3
+PYTHON := $(VENV_PATH)/bin/python
 PIP := $(VENV_PATH)/bin/pip
 PROJECT_NAME := noncrossing_trees
 PROJECT_ROOT := $(shell pwd)/..
@@ -37,7 +37,7 @@ check-venv:
 	@if [ ! -d "$(VENV_PATH)" ]; then \
 		echo "Virtual environment not found at $(VENV_PATH)"; \
 		echo "Creating one..."; \
-		python3 -m venv $(VENV_PATH); \
+		python -m venv $(VENV_PATH); \
 		$(MAKE) install-deps; \
 	else \
 		echo "Virtual environment found at $(VENV_PATH)"; \
