@@ -89,6 +89,7 @@ class NCSTGenerator:
 
             # Choose k-1 random borders that arent (0, n-1)
             # We forcefully include (0, n-1)
+            # It can be added later whether to forcefully include it or not.
             borders = [(0, n-1)] + random.sample(all_borders, k-1)
 
         edges = borders.copy()
@@ -96,7 +97,6 @@ class NCSTGenerator:
         # Helper function for recursively choosing all chords randomly
         def choose_chords(points: List[int], local_edges: List[Tuple[int, int]]):
             nonlocal edges
-
 
             # Base case: have a tree
             if len(local_edges) == len(points) - 1:
@@ -132,7 +132,7 @@ class NCSTGenerator:
                     p1 = min(points[a], points[b])
                     p2 = max(points[a], points[b])
 
-                    if (p1, p2) in local_edges: # THIS ASSUMES EDGE IS SORTED -> BAD
+                    if (p1, p2) in local_edges or (p2, p1) in local_edges:
                         border = True
                     else:
                         non_border = True
