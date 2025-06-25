@@ -5,10 +5,10 @@ def random_search_demo():
     parallel_searcher = ParallelGammaSearcher()
 
     # bord = ConfinedEdgeGenerator.evenly_spaced_border_combination(18, 3)
-    bord = [(2, 3), (6, 7), (10, 11), (14, 15)]
+    bord = [(2, 3), (6, 7), (10, 11)]
 
     parallel_searcher.find_trees_with_gamma_parallel(
-            17,     # number of vertices
+            14,     # number of vertices
             .555,   # gamma value we want, or better
             method="random",         # tree operation applied to second tree (flip)
             # k = 3,            # number of border edges (optional)

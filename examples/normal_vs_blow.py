@@ -12,7 +12,7 @@ def normal_vs_blowup_demo():
     iterations = 30
 
     print(f"=== Testing {iterations} random NCSTs on {n} vertices with {k} ===")
-    print(f"=== borders against their {k_blow}-blowup counterpart. ===")
+    print(f"=== borders against their {k_blow}-blowup counterpart.   ===")
 
     for i in range(10):
         T_i, si = gen.generate_ncst_with_k_borders(n, k)
