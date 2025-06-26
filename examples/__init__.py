@@ -5,6 +5,8 @@ from .random_search import random_search_demo
 from .enumeration_search import enumeration_search_demo
 from .random_trees import random_trees_demo
 from .restricted_enumeration import restricted_enumeration_demo
+from .normal_vs_blow import normal_vs_blowup_demo
 
 __all__ = ['best_trees_demo', 'blowup_demo', 'random_search_demo', 
-           'enumeration_search_demo', 'random_trees_demo', 'restricted_enumeration_demo']
+           'enumeration_search_demo', 'random_trees_demo', 
+           'restricted_enumeration_demo', 'normal_vs_blowup_demo']

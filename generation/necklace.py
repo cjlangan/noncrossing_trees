@@ -1,7 +1,6 @@
 from typing import List, Tuple
 from more_itertools import distinct_permutations
-from math import gcd
-from scipy.special import comb
+from math import gcd, comb
 
 from ..core import MathUtils
 

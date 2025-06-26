@@ -2,6 +2,7 @@ import networkx as nx
 import numpy as np
 from typing import List, Tuple
 from .data_structures import UnionFind
+from itertools import chain
 
 
 class TreeUtils:
@@ -98,3 +99,49 @@ class TreeUtils:
     def count_border_edges(edges: List[Tuple[int, int]], n: int) -> int:
         """Count number of border (hull) edges."""
         return sum(1 for u, v in edges if TreeUtils.is_hull_edge(u, v, n))
+
+
+    @staticmethod
+    def is_path_graph(graph):
+        """
+        Check if a graph is a path (linear chain of nodes).
+        
+        A path graph has these properties:
+        1. Exactly 2 nodes with degree 1 (endpoints)
+        2. All other nodes have degree 2 (middle nodes)
+        """
+        if len(graph.nodes()) == 0:
+            return False
+        
+        if len(graph.nodes()) == 1:
+            return True  # Single node is trivially a path
+        
+        if len(graph.nodes()) == 2:
+            return len(graph.edges()) == 1  # Two nodes connected by one edge
+        
+        # Count degrees
+        degrees = [graph.degree(n) for n in graph.nodes()]
+        degree_counts = {}
+        for d in degrees:
+            degree_counts[d] = degree_counts.get(d, 0) + 1
+        
+        # Path graph must have:
+        # - Exactly 2 nodes of degree 1 (endpoints)
+        # - All other nodes of degree 2 (middle nodes)
+        return (degree_counts.get(1, 0) == 2 and 
+                degree_counts.get(2, 0) == len(graph.nodes()) - 2)
+
+
+    @staticmethod
+    def cyclic_trim(points, a, b):
+        """Trim a list as if it were cyclic"""
+        if not points:
+            return []
+        
+        n = len(points)
+        a, b = a % n, b % n
+        
+        if a <= b:
+            return points[a:b+1]
+        else:
+            return list(chain(points[a:], points[:b+1]))
