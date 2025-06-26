@@ -41,6 +41,8 @@ make help
 make debug
 ```
 
+Once ran, you will be prompted to choose which demo to run. Checkout the `examples/` directory to modify specific parameters in the demo files.
+
 ### Available Make Commands
 
 | Command | Description |
