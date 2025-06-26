@@ -89,7 +89,7 @@ from .core import TreeUtils
 1. Create new modules in the `noncrossing_trees/` directory
 2. Add `__init__.py` files for new subdirectories
 3. Use relative imports within the package
-4. Create a demo file in the `examples/` directory that uses your feature
+4. Create a demo file in the `examples/` directory that uses your feature. Make sure that it has a name ending in "_demo.py"
 5. Edit `__init__.py` in the `examples/` directory to add your demo
 6. Update the main.py to use your demo file
 
