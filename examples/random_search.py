@@ -8,9 +8,9 @@ def random_search_demo():
     bord = [(2, 3), (6, 7), (10, 11)]
 
     parallel_searcher.find_trees_with_gamma_parallel(
-            14,     # number of vertices
-            .555,   # gamma value we want, or better
-            method="random",         # tree operation applied to second tree (flip)
+            13,                 # number of vertices
+            .455,               # gamma value we want, or better
+            method=("fr", 1),   # tree operation applied to second tree (flip then rotate 1)
             # k = 3,            # number of border edges (optional)
             borders = bord,     # optionally get specific border edges
             notable = True,     # option to print notable values

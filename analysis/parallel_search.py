@@ -15,7 +15,8 @@ class ParallelGammaSearcher:
         self.analyzer = GammaAnalyzer()
 
     def _worker_process(
-        self, n: int, gamma_threshold: float, method: str,
+        self, n: int, gamma_threshold: float, 
+        method: Tuple[str, int],
         k: Optional[int], borders: Optional[List[Tuple[int, int]]], 
         notable: bool, skip_half: bool, 
         stop_event: Event,  # type: ignore
@@ -30,25 +31,31 @@ class ParallelGammaSearcher:
                 if k is None and borders is None:
                     T_i, seed_i = NCSTGenerator.generate_random_ncst(n)
                 elif k is not None:
-                    T_i, seed_i = NCSTGenerator.generate_ncst_with_k_borders( n, k)
+                    T_i, seed_i = NCSTGenerator.generate_ncst_with_k_borders(n, k)
                 else:
-                    T_i, seed_i = NCSTGenerator.generate_ncst_with_k_borders( n, given_borders=borders)
+                    T_i, seed_i = NCSTGenerator.generate_ncst_with_k_borders(n, given_borders=borders)
 
 
                 local_tested += 1
-                seed_f = f"{method}_{seed_i}"
+                seed_f = f"{method[0]}_{method[1]}_{seed_i}"
+
+                rot = n // 2 # default to half rotation
+
+                # Otherwise if specified rotation, use it
+                if method[1] != 0:
+                    rot = method[1]
 
                 # Generate second tree based on method
-                if method == "rf":
+                if method[0] == "rf":
                     T_f = TreeUtils.flip_tree(
-                        TreeUtils.rotate_tree(T_i, n // 2))
-                elif method == "fr":
+                        TreeUtils.rotate_tree(T_i, rot))
+                elif method[0] == "fr":
                     T_f = TreeUtils.rotate_tree(
-                        TreeUtils.flip_tree(T_i), n // 2)
-                elif method == "f":
+                        TreeUtils.flip_tree(T_i), rot)
+                elif method[0] == "f":
                     T_f = TreeUtils.flip_tree(T_i)
-                elif method == "r":
-                    T_f = TreeUtils.rotate_tree(T_i, n // 2)
+                elif method[0] == "r":
+                    T_f = TreeUtils.rotate_tree(T_i, rot)
                 else:  # random
                     if k is None and borders is None:
                         T_f, seed_f = NCSTGenerator.generate_random_ncst(n)
@@ -112,15 +119,18 @@ class ParallelGammaSearcher:
             result_holder['total_tested'] += local_tested
 
     def find_trees_with_gamma_parallel(self, n: int, gamma_threshold: float,
-                                       method: str = "random", k: Optional[int] = None, borders: Optional[List[Tuple[int, int]]] = None,
-                                       notable: bool = True, skip_half: bool = True, plot: bool = True) -> Dict[str, Any]:
+                                       method: Tuple[str, int] = ("random", 0), 
+                                       k: Optional[int] = None, 
+                                       borders: Optional[List[Tuple[int, int]]] = None,
+                                       notable: bool = True, skip_half: bool = True, 
+                                       plot: bool = True) -> Dict[str, Any]:
         """
         Parallel search for tree pairs meeting gamma threshold.
 
         Parameters:
             n: number of vertices
             gamma_threshold: Gamma threshold to find or better
-            method: method to generate second NCST ('f', 'r', 'fr', 'rf', 'random')
+            method: method to generate second NCST ({'f', 'r', 'fr', 'rf', 'random'}, <number rotations>)
             k: number of border edges (None for any)
             notable: whether to print notable gammas
             plot: whether to generate visualization plots
