@@ -21,7 +21,7 @@ def best_trees_demo():
     # T_i = TreeUtils.rotate_tree(T_i, -1) + [(8,12)]
     # T_f = TreeUtils.rotate_tree(T_f, -1) + [(10,12)]
 
-    print("=== Analyzing Best Known Tree Pair (gamma ≈ 0.44444444, n=12) ===")
+    print("=== Analyzing Best Known Tree Pair (gamma ≈ 0.44444444) ===")
     gamma_analyzer.analyze_tree_pair(T_i, T_f, verbose=True, plot=True)
 
 if __name__ == "__main__":

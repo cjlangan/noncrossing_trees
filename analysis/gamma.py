@@ -26,8 +26,7 @@ class GammaAnalyzer:
         n = len(T_i) + 1
 
         # Get conflict vertices and edge pairs
-        conflict_vertices, E_i, E_f = self.conflict_analyzer.get_gaps_and_edge_pairs(
-            T_i, T_f)
+        conflict_vertices, E_i, E_f = self.conflict_analyzer.get_gaps_and_edge_pairs(T_i, T_f)
 
         # Get conflict edges
         conflict_edges = self.conflict_analyzer.get_conflict_edges(
