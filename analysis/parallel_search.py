@@ -35,8 +35,6 @@ class ParallelGammaSearcher:
                 else:
                     T_i, seed_i = NCSTGenerator.generate_ncst_with_k_borders(n, given_borders=borders)
 
-                T_i, T_f = TreeUtils.reduce_tree_pair(T_i, T_f)
-
                 local_tested += 1
                 seed_f = f"{method[0]}_{method[1]}_{seed_i}"
 
