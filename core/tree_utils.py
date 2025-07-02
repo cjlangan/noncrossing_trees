@@ -1,6 +1,6 @@
 import networkx as nx
 import numpy as np
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 from .data_structures import UnionFind
 from itertools import chain
 
@@ -183,7 +183,7 @@ class TreeUtils:
         return [(a, b) if (a, b) != TreeUtils.find_edge_from_gap(tree, gap) else (gap, gap + 1) for a, b in tree]
 
     @staticmethod
-    def reduce_tree_pair(tree_i: List[Tuple[int, int]], tree_f: List[Tuple[int, int]]) -> Tuple[List[Tuple[int, int]], List[Tuple[int, int]]]:
+    def reduce_tree_pair(tree_i: List[Tuple[int, int]], tree_f: List[Tuple[int, int]], verbose: Optional[bool] = True) -> Tuple[List[Tuple[int, int]], List[Tuple[int, int]]]:
         """Reduce a tree pair by removing redundant gaps"""
         reduced_i = [sorted((a, b)) for a, b in tree_i]
         reduced_f = [sorted((a, b)) for a, b in tree_f]
@@ -204,7 +204,8 @@ class TreeUtils:
                         (max(a, c) == gap) and
                         (min(b, d) == gap + 1)
                         for a, b in reduced_i for c, d in reduced_f]):
-                print(f"Removing gap {gap} from trees")
+                if verbose: 
+                    print(f"Removing gap {gap} from trees")
                 reduced_i = TreeUtils.remove_gap(reduced_i, gap)
                 reduced_f = TreeUtils.remove_gap(reduced_f, gap)
 
