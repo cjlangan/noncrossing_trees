@@ -6,21 +6,28 @@ def reduction_demo():
     gen = NCSTGenerator()
     ana = GammaAnalyzer()
 
-    print("Reducing 2 random trees...")
+    n = 30
+    k = 4
+    iterations = 10
 
-    T_i = gen.generate_ncst_with_k_borders(30, 4)[0]
-    T_f = gen.generate_ncst_with_k_borders(30, 4)[0]
+    print(f"=== Testing {iterations} random NCSTs on {n} vertices and {k} ===")
+    print(f"=== borders against their reduction counterpart. ===")
 
-    reduced_T_i, reduced_T_f = TreeUtils.reduce_tree_pair(T_i, T_f, verbose=True)
+    for i in range(iterations):
+        T_i, si = gen.generate_ncst_with_k_borders(n, k)
+        T_f, sf = gen.generate_ncst_with_k_borders(n, k)
 
-    gamma = ana.analyze_tree_pair(T_i, T_f, plot=False)[0]
-    gamma_reduced = ana.analyze_tree_pair(reduced_T_i, reduced_T_f)[0]
+        reduced_T_i, reduced_T_f = TreeUtils.reduce_tree_pair(T_i, T_f, verbose=False)
 
-    print(f"Original gamma: {gamma}\nReduced gamma: {gamma_reduced}")
+        gamma = ana.analyze_tree_pair(T_i, T_f, verbose=False, plot=False)[0]
+        gamma_reduced = ana.analyze_tree_pair(reduced_T_i, reduced_T_f, verbose=False, plot=False)[0]
 
-    if gamma != gamma_reduced:
-        print("ERROR: GAMMAS ARE DIFFERENT")
-
+        if gamma_reduced == gamma:
+            print(f"Test {i}: SAME GAMMAS")
+        else:
+            print(f"Test {i}: xxxxxxxxxxxx DIFFERENT GAMMAS xxxxxxxxxxxx")
+            print(f"Seeds: {si} and {sf}")
+            print(f"Trees: {T_i} and {T_f}")
 
 if __name__ == "__main__":
     reduction_demo()
