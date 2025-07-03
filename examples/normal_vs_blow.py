@@ -14,7 +14,7 @@ def normal_vs_blowup_demo():
     print(f"=== Testing {iterations} random NCSTs on {n} vertices with {k} ===")
     print(f"=== borders against their {k_blow}-blowup counterpart.   ===")
 
-    for i in range(10):
+    for i in range(iterations):
         T_i, si = gen.generate_ncst_with_k_borders(n, k)
         T_f, sf = gen.generate_ncst_with_k_borders(n, k)
         gamma_norm = ana.analyze_tree_pair(T_i, T_f, verbose=False, plot=False)[0]
