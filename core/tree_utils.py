@@ -145,7 +145,7 @@ class TreeUtils:
             return points[a:b+1]
         else:
             return list(chain(points[a:], points[:b+1]))
-
+        
     @staticmethod
     def find_edge_from_gap(tree: List[Tuple[int, int]], gap: int) -> Tuple[int, int]:
         """Find the edge associated with a specific gap."""
@@ -187,6 +187,20 @@ class TreeUtils:
         """Reduce a tree pair by removing redundant gaps"""
         reduced_i = [sorted((a, b)) for a, b in tree_i]
         reduced_f = [sorted((a, b)) for a, b in tree_f]
+        gaps_i = [0] * len(tree_i)
+        gaps_f = [0] * len(tree_f)
+        for i in range(len(tree_i)):
+            u, v = TreeUtils.find_edge_from_gap(tree_i, i)
+            for j in range(len(tree_i)):
+                if tree_i[j][0] == u and tree_i[j][1] == v:
+                    gaps_i[j] = i
+                    break
+        for i in range(len(tree_f)):
+            u, v = TreeUtils.find_edge_from_gap(tree_f, i)
+            for j in range(len(tree_f)):
+                if tree_f[j][0] == u and tree_f[j][1] == v:
+                    gaps_f[j] = i
+                    break
         bad_gaps = [i for i in range(len(tree_i)) if not TreeUtils.is_near_near_gap(tree_i, tree_f, i)][::-1]
         for gap in bad_gaps:
             reduced_i = TreeUtils.reduce_gap(reduced_i, gap)
@@ -208,5 +222,7 @@ class TreeUtils:
                     print(f"Removing gap {gap} from trees")
                 reduced_i = TreeUtils.remove_gap(reduced_i, gap)
                 reduced_f = TreeUtils.remove_gap(reduced_f, gap)
-
+                gaps_i = [g - 1 if g > gap else g for g in gaps_i if g != gap]
+                gaps_f = [g - 1 if g > gap else g for g in gaps_f if g != gap]
+        print("Reduction complete.")
         return reduced_i, reduced_f
