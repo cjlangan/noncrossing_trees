@@ -3,7 +3,8 @@ import numpy as np
 from typing import List, Tuple
 from .data_structures import UnionFind
 from itertools import chain
-
+from ..optimization import OptimizationSolver
+from .conflict import ConflictAnalyzer
 
 class TreeUtils:
     """Utility class for tree operations and transformations."""
@@ -183,7 +184,7 @@ class TreeUtils:
         return [(a, b) if (a, b) != TreeUtils.find_edge_from_gap(tree, gap) else (gap, gap + 1) for a, b in tree]
 
     @staticmethod
-    def reduce_tree_pair(tree_i: List[Tuple[int, int]], tree_f: List[Tuple[int, int]], verbose = True) -> Tuple[List[Tuple[int, int]], List[Tuple[int, int]]]:
+    def reduce_tree_pair_by_remove_gaps(tree_i: List[Tuple[int, int]], tree_f: List[Tuple[int, int]], verbose = True) -> Tuple[List[Tuple[int, int]], List[Tuple[int, int]]]:
         """Reduce a tree pair by removing redundant gaps"""
         reduced_i = [sorted((a, b)) for a, b in tree_i]
         reduced_f = [sorted((a, b)) for a, b in tree_f]
@@ -240,4 +241,45 @@ class TreeUtils:
                 gaps_i = [g - 1 if g > gap else g for g in gaps_i if g != gap]
                 gaps_f = [g - 1 if g > gap else g for g in gaps_f if g != gap]
         print("Reduction complete.")
+        return reduced_i, reduced_f
+    
+    def reduce_tree_pair(tree_i: List[Tuple[int, int]], tree_f: List[Tuple[int, int]], verbose = True) -> Tuple[List[Tuple[int, int]], List[Tuple[int, int]]]:
+        """Reduce a tree pair"""
+        reduced_i, reduced_f = tree_i, tree_f
+        def get_conflict_graph(tree_i, tree_f):
+            """Get the conflict graph of a tree pair"""
+            conflict_analyzer = ConflictAnalyzer()
+            conflict_vertices, E_i, E_f = conflict_analyzer.get_gaps_and_edge_pairs(tree_i, tree_f)
+            conflict_edges = conflict_analyzer.get_conflict_edges(
+            conflict_vertices, E_i, E_f)
+            H = nx.DiGraph()
+            H.add_nodes_from(conflict_vertices)
+            for u, v, t in conflict_edges:
+                H.add_edge(u, v, type=t)
+            return H
+        # Divide conflict graph into SCCs
+        H = get_conflict_graph(tree_i, tree_f)
+        sccs = list(nx.strongly_connected_components(H))
+        if verbose:
+            print(f"Found {len(sccs)} strongly connected components in the conflict graph.")
+        best_scc = H
+        best_gamma = float('inf')
+        for scc in sccs:
+            acyclic_nodes = OptimizationSolver.find_largest_acyclic_subgraph(H.subgraph(scc))
+            ac_h = len(acyclic_nodes)
+            v_h = len(scc)
+            gamma = None if v_h == 0 else ac_h / v_h
+            if gamma is not None and (gamma < best_gamma or (gamma == best_gamma and len(scc) < len(best_scc))):
+                best_gamma = gamma
+                best_scc = scc
+        if verbose:
+            print(f"Best SCC has gamma {best_gamma} with {len(best_scc)} nodes.")
+        for scc in sccs:
+            if scc != best_scc:
+                for gap in scc:
+                    if verbose:
+                        print(f"Reducing gap {gap} from trees")
+                    reduced_i = TreeUtils.reduce_gap(reduced_i, gap)
+                    reduced_f = TreeUtils.reduce_gap(reduced_f, gap)
+        reduced_i, reduced_f = TreeUtils.reduce_tree_pair_by_remove_gaps(reduced_i, reduced_f)
         return reduced_i, reduced_f

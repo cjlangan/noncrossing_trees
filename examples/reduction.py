@@ -7,9 +7,12 @@ def reduction_demo():
     gen = NCSTGenerator()
     ana = GammaAnalyzer()
 
-    T_i = gen.generate_ncst_with_k_borders(100, 4)[0]
-    T_f = gen.generate_ncst_with_k_borders(100, 4)[0]
+    # T_i = gen.generate_ncst_with_k_borders(100, 4)[0]
+    # T_f = gen.generate_ncst_with_k_borders(100, 4)[0]
 
+    T_i = gen.generate_random_ncst(100)[0]
+    T_f = gen.generate_random_ncst(100)[0]
+    
     # T_i = [(8, 14), (3, 15), (9, 11), (3, 8), (9, 13), (0, 15), (5, 8), (5, 7), (4, 8), (2, 15), (9, 12), (1, 15), (10, 11), (13, 14), (5, 6)]
     # T_f = [(7, 1), (12, 0), (6, 4), (12, 7), (6, 2), (15, 0), (10, 7), (10, 8), (11, 7), (13, 0), (6, 3), (14, 0), (5, 4), (2, 1), (10, 9)]
 
