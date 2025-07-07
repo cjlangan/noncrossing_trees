@@ -196,10 +196,14 @@ class TreeUtils:
             u_i, v_i = TreeUtils.find_edge_from_gap(reduced_i, gap)
             u_f, v_f = TreeUtils.find_edge_from_gap(reduced_f, gap)
             for u, v in reduced_i:
+                if v - u == 1:
+                    continue
                 if (u == gap or v == gap or (u == gap + 1 or v == gap + 1)) and ((u, v) != (u_i, v_i)):
                     can_remove = False
                     break
             for u, v in reduced_f:
+                if v - u == 1:
+                    continue
                 if (u == gap or v == gap or (u == gap + 1 or v == gap + 1)) and ((u, v) != (u_f, v_f)):
                     can_remove = False
                     break

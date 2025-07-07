@@ -17,11 +17,12 @@ def reduction_demo():
         T_i, si = gen.generate_ncst_with_k_borders(n, k)
         T_f, sf = gen.generate_ncst_with_k_borders(n, k)
 
-        reduced_T_i, reduced_T_f = TreeUtils.reduce_tree_pair(T_i, T_f, verbose=False)
+        reduced_T_i, reduced_T_f = TreeUtils.reduce_tree_pair(T_i, T_f, verbose=True)
 
         gamma = ana.analyze_tree_pair(T_i, T_f, verbose=False, plot=False)[0]
         gamma_reduced = ana.analyze_tree_pair(reduced_T_i, reduced_T_f, verbose=False, plot=False)[0]
 
+        print(f"Test {i}: Reduced from {len(T_i) + 1} to {len(reduced_T_i) + 1} vertices")
         if gamma_reduced <= gamma:
             print(f"Test {i}: SAME OR BETTER GAMMAS")
         else:
