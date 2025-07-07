@@ -22,10 +22,10 @@ def reduction_demo():
         gamma = ana.analyze_tree_pair(T_i, T_f, verbose=False, plot=False)[0]
         gamma_reduced = ana.analyze_tree_pair(reduced_T_i, reduced_T_f, verbose=False, plot=False)[0]
 
-        if gamma_reduced == gamma:
-            print(f"Test {i}: SAME GAMMAS")
+        if gamma_reduced <= gamma:
+            print(f"Test {i}: SAME OR BETTER GAMMAS")
         else:
-            print(f"Test {i}: xxxxxxxxxxxx DIFFERENT GAMMAS xxxxxxxxxxxx")
+            print(f"Test {i}: xxxxxxxxxxxx WORSE GAMMAS xxxxxxxxxxxx")
             print(f"Seeds: {si} and {sf}")
             print(f"Trees: {T_i} and {T_f}")
 

@@ -1,9 +1,10 @@
 import networkx as nx
 import numpy as np
-from typing import List, Tuple, Optional
+from typing import List, Tuple
 from .data_structures import UnionFind
 from itertools import chain
-
+from ..optimization import OptimizationSolver
+from .conflict import ConflictAnalyzer
 
 class TreeUtils:
     """Utility class for tree operations and transformations."""
@@ -150,7 +151,7 @@ class TreeUtils:
     def find_edge_from_gap(tree: List[Tuple[int, int]], gap: int) -> Tuple[int, int]:
         """Find the edge associated with a specific gap."""
         min_distance = len(tree) + 1
-        res_u = res_v = -1
+        res_u = res_v = -10
         for u, v in tree:
             if u <= gap < v or v <= gap < u:
                 if (abs(u - v) < min_distance):
@@ -167,8 +168,6 @@ class TreeUtils:
     @staticmethod
     def is_near_near_gap(tree: List[Tuple[int, int]], tree2: List[Tuple[int, int]], gap: int) -> bool:
         """Check if a gap is a near-near pair."""
-        u, v = TreeUtils.find_edge_from_gap(tree, gap)
-        u2, v2 = TreeUtils.find_edge_from_gap(tree2, gap)
         return TreeUtils.is_near_gap(tree, gap) and TreeUtils.is_near_gap(tree2, gap)
 
     @staticmethod
@@ -183,55 +182,72 @@ class TreeUtils:
         return [(a, b) if (a, b) != TreeUtils.find_edge_from_gap(tree, gap) else (gap, gap + 1) for a, b in tree]
 
     @staticmethod
-    def reduce_tree_pair(tree_i: List[Tuple[int, int]], tree_f: List[Tuple[int, int]], verbose: Optional[bool] = True) -> Tuple[List[Tuple[int, int]], List[Tuple[int, int]]]:
+    def reduce_tree_pair_by_remove_gaps(tree_i: List[Tuple[int, int]], tree_f: List[Tuple[int, int]], verbose = True) -> Tuple[List[Tuple[int, int]], List[Tuple[int, int]]]:
         """Reduce a tree pair by removing redundant gaps"""
-
         reduced_i = [sorted((a, b)) for a, b in tree_i]
         reduced_f = [sorted((a, b)) for a, b in tree_f]
-        gaps_i = [0] * len(tree_i)
-        gaps_f = [0] * len(tree_f)
-
-        for i in range(len(tree_i)):
-            u, v = TreeUtils.find_edge_from_gap(tree_i, i)
-            for j in range(len(tree_i)):
-                if tree_i[j][0] == u and tree_i[j][1] == v:
-                    gaps_i[j] = i
-                    break
-
-        for i in range(len(tree_f)):
-            u, v = TreeUtils.find_edge_from_gap(tree_f, i)
-            for j in range(len(tree_f)):
-                if tree_f[j][0] == u and tree_f[j][1] == v:
-                    gaps_f[j] = i
-                    break
-
         bad_gaps = [i for i in range(len(tree_i)) if not TreeUtils.is_near_near_gap(tree_i, tree_f, i)][::-1]
-
         for gap in bad_gaps:
             reduced_i = TreeUtils.reduce_gap(reduced_i, gap)
             reduced_f = TreeUtils.reduce_gap(reduced_f, gap)
-
+        
         for gap in bad_gaps:
-            # Check if gap can be removed: It can be removed if there doesn't exist two edges not associated to the gap such that they only overlap at the gap
+            can_remove = True
             u_i, v_i = TreeUtils.find_edge_from_gap(reduced_i, gap)
             u_f, v_f = TreeUtils.find_edge_from_gap(reduced_f, gap)
-            if (TreeUtils.is_near_near_gap(reduced_i, reduced_f, gap - 1) and (TreeUtils.find_edge_from_gap(reduced_i, gap - 1)[1] == gap + 1 or TreeUtils.find_edge_from_gap(reduced_f, gap - 1)[1] == gap + 1)):
-                continue            
-            if (TreeUtils.is_near_near_gap(reduced_i, reduced_f, gap + 1) and (TreeUtils.find_edge_from_gap(reduced_i, gap + 1)[0] == gap or TreeUtils.find_edge_from_gap(reduced_f, gap + 1)[0] == gap)):
-                continue
-            if not any([(a, b) != (u_i, v_i) and
-                        (c, d) != (u_f, v_f) and
-                        (max(a, c) == gap) and
-                        (min(b, d) == gap + 1)
-                        for a, b in reduced_i for c, d in reduced_f]):
-                if verbose: 
+            for u, v in reduced_i:
+                if (u == gap or v == gap or (u == gap + 1 or v == gap + 1)) and ((u, v) != (u_i, v_i)):
+                    can_remove = False
+                    break
+            for u, v in reduced_f:
+                if (u == gap or v == gap or (u == gap + 1 or v == gap + 1)) and ((u, v) != (u_f, v_f)):
+                    can_remove = False
+                    break
+            if can_remove:
+                if verbose:
                     print(f"Removing gap {gap} from trees")
                 reduced_i = TreeUtils.remove_gap(reduced_i, gap)
                 reduced_f = TreeUtils.remove_gap(reduced_f, gap)
-                gaps_i = [g - 1 if g > gap else g for g in gaps_i if g != gap]
-                gaps_f = [g - 1 if g > gap else g for g in gaps_f if g != gap]
-
+        print("Reduction complete.")
+        return reduced_i, reduced_f
+    
+    def reduce_tree_pair(tree_i: List[Tuple[int, int]], tree_f: List[Tuple[int, int]], verbose = True) -> Tuple[List[Tuple[int, int]], List[Tuple[int, int]]]:
+        """Reduce a tree pair"""
+        reduced_i, reduced_f = tree_i, tree_f
+        def get_conflict_graph(tree_i, tree_f):
+            """Get the conflict graph of a tree pair"""
+            conflict_analyzer = ConflictAnalyzer()
+            conflict_vertices, E_i, E_f = conflict_analyzer.get_gaps_and_edge_pairs(tree_i, tree_f)
+            conflict_edges = conflict_analyzer.get_conflict_edges(
+            conflict_vertices, E_i, E_f)
+            H = nx.DiGraph()
+            H.add_nodes_from(conflict_vertices)
+            for u, v, t in conflict_edges:
+                H.add_edge(u, v, type=t)
+            return H
+        # Divide conflict graph into SCCs
+        H = get_conflict_graph(tree_i, tree_f)
+        sccs = list(nx.strongly_connected_components(H))
         if verbose:
-            print("Reduction complete.")
-
+            print(f"Found {len(sccs)} strongly connected components in the conflict graph.")
+        best_scc = H
+        best_gamma = float('inf')
+        for scc in sccs:
+            acyclic_nodes = OptimizationSolver.find_largest_acyclic_subgraph(H.subgraph(scc))
+            ac_h = len(acyclic_nodes)
+            v_h = len(scc)
+            gamma = None if v_h == 0 else ac_h / v_h
+            if gamma is not None and (gamma < best_gamma or (gamma == best_gamma and len(scc) < len(best_scc))):
+                best_gamma = gamma
+                best_scc = scc
+        if verbose:
+            print(f"Best SCC has gamma {best_gamma} with {len(best_scc)} nodes.")
+        for scc in sccs:
+            if scc != best_scc:
+                for gap in scc:
+                    if verbose:
+                        print(f"Reducing gap {gap} from trees")
+                    reduced_i = TreeUtils.reduce_gap(reduced_i, gap)
+                    reduced_f = TreeUtils.reduce_gap(reduced_f, gap)
+        reduced_i, reduced_f = TreeUtils.reduce_tree_pair_by_remove_gaps(reduced_i, reduced_f, verbose=verbose)
         return reduced_i, reduced_f
