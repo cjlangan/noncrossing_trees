@@ -207,8 +207,58 @@ class Visualizer:
         plt.title("Tree on Convex Polygon")
 
         if filename:
-            plt.savefig(filename, bbox_inches='tight')
+            plt.savefig(f"./{PROJECT_NAME}/{filename}", bbox_inches='tight')
             plt.close(fig)
             print("Generated tree graph as", filename)
+        else:
+            plt.show()
+
+
+    @staticmethod
+    def plot_bipartite_graph(B: nx.Graph, nodes_Ti: List[str], nodes_Tf: List[str], filename: Optional[str] = None):
+        # Adjust height based on number of nodes
+        max_nodes = max(len(nodes_Ti), len(nodes_Tf))
+        height_per_node = 0.7  # tweak if needed
+        fig_height = max(4, height_per_node * max_nodes)
+        fig, ax = plt.subplots(figsize=(10, fig_height), dpi=200)
+
+
+        # Sort by descending degree to reduce overlap
+        nodes_Ti_sorted = sorted(nodes_Ti, key=lambda n: -B.degree(n))
+        nodes_Tf_sorted = sorted(nodes_Tf, key=lambda n: -B.degree(n))
+
+        # Layout using one of the node sets
+        pos = nx.bipartite_layout(B, nodes_Ti_sorted, align='vertical')
+
+
+        # Draw nodes with white fill and colored borders
+        nx.draw_networkx_nodes(
+            B, pos, nodelist=nodes_Ti, node_color='white',
+            edgecolors='red', linewidths=2.0, node_size=1500, label="T", ax=ax
+        )
+        nx.draw_networkx_nodes(
+            B, pos, nodelist=nodes_Tf, node_color='white',
+            edgecolors='blue', linewidths=2.0, node_size=1500, label="T'", ax=ax
+        )
+
+        nx.draw_networkx_edges(B, pos, ax=ax)
+        nx.draw_networkx_labels(B, pos, font_size=8, ax=ax)
+
+        ax.axis('off')
+        ax.set_title("Bipartite Graph of Crossing Edges", pad=40)
+        ax.legend(
+            loc='upper center',
+            bbox_to_anchor=(0.5, 1.02),
+            ncol=2,
+            frameon=False,
+            handletextpad=2.0  # ← increases space between node marker and label
+        )
+
+        plt.tight_layout()
+
+        if filename:
+            plt.savefig(f"./{PROJECT_NAME}/{filename}", bbox_inches='tight', dpi=300)
+            plt.close(fig)
+            print(f"Generated bipartite graph as {filename}")
         else:
             plt.show()
