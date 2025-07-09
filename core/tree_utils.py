@@ -1,5 +1,6 @@
 import networkx as nx
 import numpy as np
+import math
 from typing import List, Tuple, Optional
 from .data_structures import UnionFind
 from itertools import chain
@@ -235,3 +236,31 @@ class TreeUtils:
             print("Reduction complete.")
 
         return reduced_i, reduced_f
+
+
+    @staticmethod
+    def cross(e1: Tuple[int, int], e2: Tuple[int, int]) -> bool:
+        """Determine if two edges cross"""
+
+        a,b = sorted(e1)
+        c,d = sorted(e2)
+
+        return a < c < b < d or c < a < d < b
+
+    @staticmethod
+    def is_short(edge: Tuple[int, int]) -> bool:
+        """Determine if an edge is short"""
+        a,b = edge
+        return abs(b - a) == 1
+
+    @staticmethod
+    def edge_length(edge: Tuple[int, int], n: int) -> int:
+        """Determines legth of edge on a convex polygon"""
+        max_length = math.floor(n/2)
+        a,b = edge
+        length = linear_length = abs(b - a)
+
+        if linear_length > max_length:
+            length = n - linear_length
+
+        return length
