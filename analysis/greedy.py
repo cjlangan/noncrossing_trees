@@ -61,9 +61,12 @@ class Greedy:
                 if TreeUtils.cross(ei, ef):
                     B.add_edge(f"i_{ei}", f"f_{ef}")
 
+        sequence = []
+        done = False
 
-        # Flip Loop
-        for i in range(20):
+        # Main flipping loop
+        while not done:
+
             # Sort T' edges by least crossings, then by least length
             T_f_ordered = sorted(
                 (d["edge"] for n, d in B.nodes(data=True) if d["bipartite"] == 1),
@@ -73,52 +76,120 @@ class Greedy:
                 )
             )
 
+            if len(T_f_ordered) == 0:
+                break
+
             # Get all minima (lowest crossings and lowest length)
             lowest_crossing = B.degree[f"f_{T_f_ordered[0]}"]
             lowest_length = TreeUtils.edge_length(T_f_ordered[0], n)
 
-            if lowest_crossing != 0:
-                print("LOWEST CROSSING NOT ZERO")
-                break
-
-            # CASE FOR WHEN LOWEST CROSSING IS ZERO
-            
             minima = []
             for i in range(len(T_f_ordered)):
                 if B.degree[f"f_{T_f_ordered[i]}"] == lowest_crossing:
-                    if TreeUtils.edge_length(T_f_ordered[i], n) == lowest_length:
-                        minima.append(T_f_ordered[i])
-            print("Minima:", minima)
+                    # if TreeUtils.edge_length(T_f_ordered[i], n) == lowest_length:
+                    minima.append(T_f_ordered[i])
+            # print("Minima:", minima)
 
-
-            T_i_candidate_degree = -1
             T_i_candidate = (-1, -1)
             T_f_candidate = minima[0]
-            all_cyc = set()
+            T_i_candidate_degree = -1
+            need_park = False
 
-            for edge in minima:
-                # Get all edge involved in cycle
-                cyc = Greedy.get_cycle_edges_after_adding(T_i_graph, edge)
+            # CASE FOR DIRECT FLIP NO CROSSING
+            if lowest_crossing == 0:
 
-                # Prune out shared edges (assumes happy edge conjecture)
-                cyc = [(a, b) for a, b in cyc if not T_f_graph.has_edge(a, b)]
+                print("CASE 1: FINDING EASY DIRECT FLIP")
+            
+                for edge in minima:
+                    # Get all edge involved in cycle
+                    cyc = Greedy.get_cycle_edges_after_adding(T_i_graph, edge)
 
-                # Add options to all candidates and check for best flip
-                for e in cyc:
-                    all_cyc.add(e)
+                    # Prune out shared edges (assumes happy edge conjecture)
+                    cyc = [(a, b) for a, b in cyc if not T_f_graph.has_edge(a, b)]
 
-                    # We want to remove the most crossings => prioritise high degree then long length
-                    # Check if new candidate crosses more, or if the same check if it is longer
-                    if B.degree[f"i_{e}"] > T_i_candidate_degree or (B.degree[f"i_{e}"] == T_i_candidate_degree and TreeUtils.edge_length(e, n) > TreeUtils.edge_length(T_i_candidate, n)):
-                        T_i_candidate_degree = B.degree[f"i_{e}"]
-                        T_i_candidate = e
-                        T_f_candidate = edge
+                    # check for best flip of possibilities
+                    for e in cyc:
+                        # We want to remove the most crossings => prioritise high degree then long length
+                        # Check if new candidate crosses more, or if the same check if it is longer
+                        if B.degree[f"i_{e}"] > T_i_candidate_degree or (B.degree[f"i_{e}"] == T_i_candidate_degree and TreeUtils.edge_length(e, n) > TreeUtils.edge_length(T_i_candidate, n)):
+                            T_i_candidate_degree = B.degree[f"i_{e}"]
+                            T_i_candidate = e
+                            T_f_candidate = edge
 
-                # print(f"Options to flip into {edge} are {cyc}")
+                # need to remove T' edge if was a direct flip, which it is in this case
+                B.remove_node(f"f_{T_f_candidate}")
 
+
+            # CASE FOR DIRECT FLIP ONE CROSSING
+            if lowest_crossing == 1:
+
+                print("CASE 2: CHECKING FOR CROSSING DIRECT FLIP")
+                
+                # Find best T' candidate, and corresponding T edge (could be multiple)
+                for edge in minima:
+                    # Get all edge involved in cycle
+                    cyc = Greedy.get_cycle_edges_after_adding(T_i_graph, edge)
+
+                    # Prune out shared edges (assumes happy edge conjecture)
+                    cyc = [(a, b) for a, b in cyc if not T_f_graph.has_edge(a, b)]
+
+                    for e in cyc:
+                        # Check if the edge can be a direct flip (also crosses)
+                        if B.has_edge(f"i_{e}", f"f_{edge}"):
+                            # Check if it has a higher degree, or same degree but longer
+                            # COULD MAYBE ADD TIE BREAK LATER
+                            if B.degree[f"i_{e}"] > T_i_candidate_degree or (B.degree[f"i_{e}"] == T_i_candidate_degree and TreeUtils.edge_length(e, n) > TreeUtils.edge_length(T_i_candidate, n)):
+                                T_i_candidate_degree = B.degree[f"i_{e}"]
+                                T_i_candidate = e
+                                T_f_candidate = edge
+
+                # Check if we found a direct flip
+                if T_i_candidate_degree != -1:
+
+                    # need to remove T' edge if was a direct flip, which it is in this case
+                    B.remove_node(f"f_{T_f_candidate}")
+
+                else:
+                    need_park = True
+
+
+            # CASE FOR INDIRECT FLIP (to border spot)
+            if lowest_crossing > 1 or need_park:
+                print("CASE 3: NO DIRECT FLIPS, NEED TO PARK")
+
+                T_i_candidate_degree = 0
+
+                # Determine available borders
+                available_borders = []
+                for i in range(n):
+                    if not T_i_graph.has_edge(i, (i+1)%n):
+                        if i+1 < n:
+                            available_borders.append((i, i+1))
+                        else:
+                            available_borders.append((0, n-1))
+
+
+                # Find minima that can be moved to border
+                for bord in available_borders:
+                    cyc = Greedy.get_cycle_edges_after_adding(T_i_graph, bord)
+
+                    # See if any minima neighbor is in cycle
+                    for e in cyc:
+                        for m in minima:
+                            if B.has_edge(f"i_{e}", f"f_{m}"):
+                                T_f_candidate = bord
+                                T_i_candidate = e
+                                break
+
+                # Since indirect, we need to add a new T edge/bipartite node
+                B.add_node(f"i_{T_f_candidate}", bipartite=0, edge=T_f_candidate)
+
+
+            # Execute the flip Found
             print(f"Best flip: {T_i_candidate} --> {T_f_candidate}, crossing {T_i_candidate_degree} edges")
+            sequence.append((T_i_candidate, T_f_candidate))
 
-            print("Executing flip...")
+            # Execute the flip
             curr_Ti.remove(T_i_candidate)
             curr_Ti.append(T_f_candidate)
             a,b = T_i_candidate
@@ -131,41 +202,13 @@ class Greedy:
             Visualizer.plot_trees_together(curr_Ti, T_f, "original_trees.png")
 
             # Now we need to update the Bipartite graph, edge is removed so remove vertex associated
-            # Also need to remove T' edge if was a direct flip, which it is in this case
             B.remove_node(f"i_{T_i_candidate}")
-            B.remove_node(f"f_{T_f_candidate}")
 
 
-        # CASE FOR ZERO COMPLETE
-        # NOW NEED TO DO THE CASE FOR ONLY ONES
-        # NEED TO CHECK IF THERE ARE ANY DIRECT FLIPS
-        # OF DIRECT FLIPS, CHOOSE THE ONE WITH MOST CROSSINGS THE LONGEST LENGTH
-        # IN CASE OF TIE BREAKING, CHOOSE SHORTEST T_f EDGE
-
-        # THEN NEED TO DO THE COMPLICATED CASE FOR WHEN NEED TO PARK AN EDGE
-        
-
-        # If empty, choose connecting chord that is not a leaf with most crossings to flip into it
-        #   - further, must choose red edges that would form cycle with it. (should only ever be one cycle)
-        #   - does one always exist? yes, since putting edge there would make a cycle, and 
-        #       we can then pick any other edge in the cycle to put there.
-        #   - Prioritise: high crossings, chords
-        #
-        # So if empty then there is always an edge to flip into it:
-        #   - take the edge in the cycle with the most crossings
-        #
-        # In general for multiple empty, prioritise the ones on the borders
-        # 
-        # Eventually will have the border complete.
-        #
-        # If one crossing, it is possible that it can be flipped in, also possible that it cannot.
-        #
-        # SEE WHITEBOARD FOR IDEAS ON THIS ALGORITHM
-        # IMPLEMENTATION WILL BE QUITE DIFFICULT (AT LEAST IN ENSURING GOOD TIME COMPLEXITY)
-        # BUT AS LONG AS THE LOGIC IS THERE THEN WE CAN CONSTRUCT IT AND THEN BEGIN TESTING
-        # AGAINST THE KNOWN BEST MINMUM FLIP SEQUENCES.
-
-        return []
+        print("===== FLIPPING COMPLETE ======")
+        print("\nFLIP SEQUENCE:", sequence)
+        print("\nFLIP DISTANCE:", len(sequence))
+        return sequence
 
 
     @staticmethod
