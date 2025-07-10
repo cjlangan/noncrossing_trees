@@ -1,5 +1,5 @@
 import networkx as nx
-from typing import Tuple, List
+from typing import Tuple, List, Optional
 
 from .conflict import ConflictAnalyzer
 from ..visualization import Visualizer
@@ -15,13 +15,22 @@ class Greedy:
 
     def get_flip_sequence(self, 
             T_i: List[Tuple[int, int]], 
-            T_f: List[Tuple[int, int]]
+            T_f: List[Tuple[int, int]],
+            verbose: Optional[bool] = False, 
+            slow: Optional[bool] = False, 
     ) -> List[Tuple[Tuple[int, int], Tuple[int, int]]]:
         """Determines the flip sequence and distance between two NCSTs"""
 
-        self.visualizer.plot_trees_together(T_i, T_f, "original_trees.png")
-        self.visualizer.plot_linear_graph(T_i, T_f, T_i, T_f, "linear_graph.png")
+        # self.visualizer.plot_trees_together(T_i, T_f, "original_trees.png")
+        # self.visualizer.plot_linear_graph(T_i, T_f, T_i, T_f, "linear_graph.png")
         # self.visualizer.plot_bipartite_graph(B, "bipartite_graph.png")
+
+        # Order edges (a, b) where a < b
+        for i in range(len(T_i)):
+            a, b = sorted(T_i[i])
+            c, d = sorted(T_f[i])
+            T_i[i] = (a, b)
+            T_f[i] = (c, d)
 
         curr_Ti = T_i.copy()
 
@@ -98,7 +107,8 @@ class Greedy:
             # CASE FOR DIRECT FLIP NO CROSSING
             if lowest_crossing == 0:
 
-                print("CASE 1: FINDING EASY DIRECT FLIP")
+                if verbose:
+                    print("CASE 1: FINDING EASY DIRECT FLIP")
             
                 for edge in minima:
                     # Get all edge involved in cycle
@@ -123,7 +133,8 @@ class Greedy:
             # CASE FOR DIRECT FLIP ONE CROSSING
             if lowest_crossing == 1:
 
-                print("CASE 2: CHECKING FOR CROSSING DIRECT FLIP")
+                if verbose:
+                    print("CASE 2: CHECKING FOR CROSSING DIRECT FLIP")
                 
                 # Find best T' candidate, and corresponding T edge (could be multiple)
                 for edge in minima:
@@ -155,7 +166,8 @@ class Greedy:
 
             # CASE FOR INDIRECT FLIP (to border spot)
             if lowest_crossing > 1 or need_park:
-                print("CASE 3: NO DIRECT FLIPS, NEED TO PARK")
+                if verbose:
+                    print("CASE 3: NO DIRECT FLIPS, NEED TO PARK")
 
                 T_i_candidate_degree = 0
 
@@ -171,22 +183,44 @@ class Greedy:
 
                 # Find minima that can be moved to border
                 for bord in available_borders:
+
+                    # Create temporary graph with border
+                    temp = T_i_graph.copy()
+                    a,b = bord
+                    temp.add_edge(a, b)
+
+
                     cyc = Greedy.get_cycle_edges_after_adding(T_i_graph, bord)
 
                     # See if any minima neighbor is in cycle
                     for e in cyc:
                         for m in minima:
                             if B.has_edge(f"i_{e}", f"f_{m}"):
-                                T_f_candidate = bord
-                                T_i_candidate = e
-                                break
+
+                                # Remove candidate from temporary graph
+                                a, b = e
+                                temp2 = temp.copy()
+                                temp2.remove_edge(a, b)
+
+                                # Add minima
+                                a, b = m
+                                temp2.add_edge(a, b)
+
+                                # Check if there is a cycle with minima and border
+                                valid = not Greedy.has_cycle_with_edges(temp2, bord, m)
+
+                                if valid:
+                                    T_f_candidate = bord
+                                    T_i_candidate = e
+                                    break
 
                 # Since indirect, we need to add a new T edge/bipartite node
                 B.add_node(f"i_{T_f_candidate}", bipartite=0, edge=T_f_candidate)
 
 
             # Execute the flip Found
-            print(f"Best flip: {T_i_candidate} --> {T_f_candidate}, crossing {T_i_candidate_degree} edges")
+            if verbose:
+                print(f"Best flip: {T_i_candidate} --> {T_f_candidate}, crossing {T_i_candidate_degree} edges")
             sequence.append((T_i_candidate, T_f_candidate))
 
             # Execute the flip
@@ -197,17 +231,18 @@ class Greedy:
             T_i_graph.remove_edge(a,b)
             T_i_graph.add_edge(c,d)
 
-            # Print trees after flip
-            input()
-            Visualizer.plot_trees_together(curr_Ti, T_f, "original_trees.png")
+            # Print trees after flip if on step by step mode
+            if slow:
+                input()
+                Visualizer.plot_trees_together(curr_Ti, T_f, "original_trees.png")
 
             # Now we need to update the Bipartite graph, edge is removed so remove vertex associated
             B.remove_node(f"i_{T_i_candidate}")
 
 
-        print("===== FLIPPING COMPLETE ======")
-        print("\nFLIP SEQUENCE:", sequence)
-        print("\nFLIP DISTANCE:", len(sequence))
+        if verbose:
+            print("===== FLIPPING COMPLETE ======")
+
         return sequence
 
 
@@ -235,3 +270,31 @@ class Greedy:
             cycle_edges.append((min(u, v), max(u, v)))
 
         return cycle_edges
+
+
+    @staticmethod
+    def has_cycle_with_edges(G: nx.Graph, e1: Tuple[int, int], e2: Tuple[int, int]) -> bool:
+        # Normalize the edges since nx.Graph is undirected
+        a, b = tuple(sorted(e1))
+        c, d = tuple(sorted(e2))
+        e1 = (a, b)
+        e2 = (c, d)
+
+        # Check that both edges actually exist in the graph
+        if not (G.has_edge(*e1) and G.has_edge(*e2)):
+            return False
+
+        # Remove e1 from G and see if e1[0] is still connected to e1[1] via a path containing e2
+        G_temp = G.copy()
+        G_temp.remove_edge(*e1)
+        try:
+            # Check all simple paths between the endpoints of e1
+            for path in nx.all_simple_paths(G_temp, source=e1[0], target=e1[1]):
+                # Turn path into a set of edges
+                path_edges = {tuple(sorted((path[i], path[i + 1]))) for i in range(len(path) - 1)}
+                if e2 in path_edges:
+                    return True
+        except nx.NetworkXNoPath:
+            return False
+
+        return False
