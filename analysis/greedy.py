@@ -181,10 +181,12 @@ class Greedy:
                             available_borders.append((0, n-1))
 
 
-                # Find minima that can be moved to border
+                highest_bord_degree = -1
+
+                # Find minima crosser that can be moved to border
                 for bord in available_borders:
 
-                    # Create temporary graph with border
+                    # Create temporary graph with border for look-ahead
                     temp = T_i_graph.copy()
                     a,b = bord
                     temp.add_edge(a, b)
@@ -209,7 +211,16 @@ class Greedy:
                                 # Check if there is a cycle with minima and border
                                 valid = not Greedy.has_cycle_with_edges(temp2, bord, m)
 
-                                if valid:
+                                # Get highest degree of border endpoint
+                                # We want higher degree to stay more connect to larger structure
+                                temp3 = temp.copy()
+                                a,b = bord
+                                temp3.add_edge(a, b)
+                                bord_degree = max(temp3.degree[bord[0]], temp3.degree[bord[1]])
+
+                                # If valid prioritise longest candidate, THEN highest border degree
+                                if valid and (TreeUtils.edge_length(e, n) > TreeUtils.edge_length(T_i_candidate, n) or (TreeUtils.edge_length(e, n) == TreeUtils.edge_length(T_i_candidate, n) and bord_degree > highest_bord_degree)):
+                                    highest_bord_degree = bord_degree
                                     T_f_candidate = bord
                                     T_i_candidate = e
                                     break
