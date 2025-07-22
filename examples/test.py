@@ -23,14 +23,16 @@ def test_demo():
     T_i = [(5,9),(0,9),(1,4),(0,11),(1,5),(7,8),(2,4),(3,4),(6,8),(5,8),(0,10)]
     T_f = [(6,2),(11,2),(10,7),(11,0),(10,6),(4,3),(9,7),(8,7),(5,3),(6,3),(11,1)]
 
+    T_i = [(5,9),(0,9),(1,4),(0,11),(1,5),(7,8),(2,4),(3,4),(6,8),(5,8),(0,10)]
+
     conflict_vertices, E_i, E_f = ana.get_gaps_and_edge_pairs(T_i, T_f)
 
     # Get the k blowups
-    T_i_blown = TreeUtils.blowup_tree(T_i, 1, E_i, conflict_vertices)
-    T_f_blown = TreeUtils.blowup_tree(T_f, 1, E_f, conflict_vertices)
+    T_i_blown = TreeUtils.blowup_tree(T_i, 0, E_i, conflict_vertices)
+    T_f_blown = TreeUtils.blowup_tree(T_f, 0, E_f, conflict_vertices)
 
-    # Visualizer.plot_trees_together(T_i, T_f, "original_trees.png")
-    # Visualizer.plot_linear_graph(T_i, T_f, T_i, T_f, "linear_graph.png")
+    Visualizer.plot_trees_together(T_i, T_f, "original_trees.png")
+    Visualizer.plot_linear_graph(T_i, T_f, T_i, T_f, "linear_graph.png")
 
     for i in range(len(T_i_blown) + 1):
         sequence = greed.get_flip_sequence(
@@ -39,12 +41,12 @@ def test_demo():
         print("Flip distance:", len(sequence))
 
 
-    # T_ir = TreeUtils.rotate_tree(T_i_blown, 2)
-    # T_fr = TreeUtils.rotate_tree(T_f_blown, 2)
-    # Visualizer.plot_trees_together(T_ir, T_fr, "original_trees.png")
-    # sequence = greed.get_flip_sequence(T_ir, T_fr, verbose=True, slow=False)
-    # print("Flip distance:", len(sequence))
-    # sequence = greed.get_flip_sequence(T_ir, T_fr, verbose=True, slow=True)
+    T_ir = TreeUtils.rotate_tree(T_i_blown, 0)
+    T_fr = TreeUtils.rotate_tree(T_f_blown, 0)
+    Visualizer.plot_trees_together(T_ir, T_fr, "original_trees.png")
+    sequence = greed.get_flip_sequence(T_ir, T_fr, verbose=True, slow=False)
+    print("Flip distance:", len(sequence))
+    sequence = greed.get_flip_sequence(T_ir, T_fr, verbose=True, slow=True)
 
 if __name__ == "__main__":
     test_demo()

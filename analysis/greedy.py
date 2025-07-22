@@ -1,5 +1,5 @@
 import networkx as nx
-from typing import Tuple, List, Optional
+from typing import Tuple, List, Optional, Set
 
 from .conflict import ConflictAnalyzer
 from ..visualization import Visualizer
@@ -174,14 +174,14 @@ class Greedy:
                 # Determine available borders
                 available_borders = []
                 for i in range(n):
-                    if not T_i_graph.has_edge(i, (i+1)%n):
-                        if i+1 < n:
-                            available_borders.append((i, i+1))
-                        else:
-                            available_borders.append((0, n-1))
+                    a, b = sorted((i, (i+1)%n))
+                    if not T_i_graph.has_edge(a, b):
+                        available_borders.append((a, b))
 
 
                 highest_bord_degree = -1
+                longest_cyc_length = -1
+                highest_candidate_degree = -1
 
                 # Find minima crosser that can be moved to border
                 for bord in available_borders:
@@ -199,6 +199,8 @@ class Greedy:
                         for m in minima:
                             if B.has_edge(f"i_{e}", f"f_{m}"):
 
+                                # print(f"edge {e} crosses minima {m}")
+
                                 # Remove candidate from temporary graph
                                 a, b = e
                                 temp2 = temp.copy()
@@ -208,22 +210,81 @@ class Greedy:
                                 a, b = m
                                 temp2.add_edge(a, b)
 
-                                # Check if there is a cycle with minima and border
-                                valid = not Greedy.has_cycle_with_edges(temp2, bord, m)
+
+                                # Valid if no cycle with border and minima
+                                valid = not Greedy.has_cycle_with_edges(temp2, bord, m) # this has been the norm
+                                # valid = True
+
+                                # Let's try highest T' degree
 
                                 # Get highest degree of border endpoint
                                 # We want higher degree to stay more connect to larger structure
                                 temp3 = temp.copy()
+                                temp3 = T_f_graph.copy() # Makes n=13 better, but n=12 worse
                                 a,b = bord
                                 temp3.add_edge(a, b)
                                 bord_degree = max(temp3.degree[bord[0]], temp3.degree[bord[1]])
 
+
+                                # Testing new validation:
+                                # Get all edge neighbors of candidate border edge
+                                # temp3 = T_f_graph.copy()
+                                # a_edges = list(temp3.edges(a))
+                                # b_edges = list(temp3.edges(b))
+                                # neigh = a_edges + b_edges
+                                #
+                                # # Sort since getting edges always messes things up
+                                # for i in range(len(neigh)):
+                                #     a, b = sorted(neigh[i])
+                                #     neigh[i] = (a, b)
+                                #
+                                #
+                                # # Ensure none are minima
+                                # valid = True
+                                # for mi in minima:
+                                #     for ne in neigh:
+                                #         if mi == ne:
+                                #             valid = False
+
+
+                                cyc_length = len(Greedy.get_cycle_edges_after_adding(T_f_graph, bord))
+
+
+                                # Prioritise higher crossing candidate, then border degree
+                                # if valid and B.degree[f"i_{e}"] > highest_candidate_degree or (B.degree[f"i_{e}"] == highest_candidate_degree and bord_degree > highest_bord_degree):
+
+                                    # if e == (2, 11) or e == (0, 2):
+                                    #     print("THIS ONE")
+
+                                # This is the main one I've been using
                                 # If valid prioritise longest candidate, THEN highest border degree
                                 if valid and (TreeUtils.edge_length(e, n) > TreeUtils.edge_length(T_i_candidate, n) or (TreeUtils.edge_length(e, n) == TreeUtils.edge_length(T_i_candidate, n) and bord_degree > highest_bord_degree)):
+                                                                                                                        #(cyc_length > longest_cyc_length or (cyc_length == longest_cyc_length and bord_degree > highest_bord_degree)))):
+
+                                # if valid and B.degree[f"i_{e}"] > highest_candidate_degree:
                                     highest_bord_degree = bord_degree
+                                    highest_candidate_degree = B.degree[f"i_{e}"]
                                     T_f_candidate = bord
                                     T_i_candidate = e
+
                                     break
+
+                # Determine all possible borders the chosen candidate can move to 
+                candidate_borders = []
+                for bord in available_borders:
+                    temp = T_i_graph.copy()
+                    a,b = bord
+                    temp.add_edge(a, b)
+
+                    cyc = Greedy.get_cycle_edges_after_adding(T_i_graph, bord)
+
+                    for e in cyc:
+                        if e == T_i_candidate:
+                            candidate_borders.append(bord)
+                            break
+
+                # print(f"All bords: {candidate_borders}")
+
 
                 # Since indirect, we need to add a new T edge/bipartite node
                 B.add_node(f"i_{T_f_candidate}", bipartite=0, edge=T_f_candidate)
