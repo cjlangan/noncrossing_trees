@@ -207,8 +207,59 @@ class Visualizer:
         plt.title("Tree on Convex Polygon")
 
         if filename:
-            plt.savefig(filename, bbox_inches='tight')
+            plt.savefig(f"./{PROJECT_NAME}/{filename}", bbox_inches='tight')
             plt.close(fig)
             print("Generated tree graph as", filename)
+        else:
+            plt.show()
+
+
+    @staticmethod
+    def plot_bipartite_graph(B: nx.Graph, filename: Optional[str] = None):
+        # Separate nodes by bipartite attribute
+        nodes_Ti = [n for n, d in B.nodes(data=True) if d["bipartite"] == 0]
+        nodes_Tf = [n for n, d in B.nodes(data=True) if d["bipartite"] == 1]
+
+        # Adjust height based on number of nodes
+        max_nodes = max(len(nodes_Ti), len(nodes_Tf))
+        height_per_node = 0.7
+        fig_height = max(4, height_per_node * max_nodes)
+        fig, ax = plt.subplots(figsize=(10, fig_height), dpi=200)
+
+        # Layout
+        pos = nx.bipartite_layout(B, nodes_Ti)
+
+        # Draw nodes
+        nx.draw_networkx_nodes(
+            B, pos, nodelist=nodes_Ti, node_color='white',
+            edgecolors='red', linewidths=2.0, node_size=1500, label="T", ax=ax
+        )
+        nx.draw_networkx_nodes(
+            B, pos, nodelist=nodes_Tf, node_color='white',
+            edgecolors='blue', linewidths=2.0, node_size=1500, label="T'", ax=ax
+        )
+
+        # Optional: show edge tuple as node label
+        labels = {n: f"{B.nodes[n]['edge']}" for n in B.nodes}
+
+        nx.draw_networkx_edges(B, pos, ax=ax)
+        nx.draw_networkx_labels(B, pos, labels=labels, font_size=8, ax=ax)
+
+        ax.axis('off')
+        ax.set_title("Bipartite Graph of Crossing Edges", pad=40)
+        ax.legend(
+            loc='upper center',
+            bbox_to_anchor=(0.5, 1.02),
+            ncol=2,
+            frameon=False,
+            handletextpad=2.0
+        )
+
+        plt.tight_layout()
+
+        if filename:
+            plt.savefig(f"./{PROJECT_NAME}/{filename}", bbox_inches='tight', dpi=300)
+            plt.close(fig)
+            print(f"Generated bipartite graph as {filename}")
         else:
             plt.show()

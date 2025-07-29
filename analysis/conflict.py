@@ -93,3 +93,36 @@ class ConflictAnalyzer:
                         conflict_edges.append((g_i, g_j, 3))
 
         return conflict_edges
+
+    @staticmethod
+    def get_gap_pairing_whole(T: List[Tuple[int, int]]) -> List[Tuple[int, int]]:
+        """Orders NCST edges to align with gaps 0-(n-1)"""
+        n = len(T) + 1
+        gaps = list(range(n-1))
+
+        remaining_edges = set(T)
+        associated_edges = []
+
+        # Get associated edge for each gap
+        for g in gaps:
+            shortest = (0, 999)
+
+            # Find shortest edge that covers the gap
+            for a,b in remaining_edges:
+                a,b = sorted((a,b))
+
+                # Check if the edge covers the gap
+                if a <= g and g+1 <= b:
+                    # Check if it is shorter
+                    if b - a < ConflictAnalyzer.edge_length(shortest):
+                        shortest = (a, b)
+
+            # append associated gap to list and remove gap from options
+            associated_edges.append(shortest)
+            remaining_edges.remove(shortest)
+
+        # Ensure that no edges left in the set
+        assert(len(remaining_edges) == 0)
+
+        return associated_edges
+

@@ -8,8 +8,11 @@ from .restricted_enumeration import restricted_enumeration_demo
 from .normal_vs_blow import normal_vs_blowup_demo
 from .reduction import reduction_demo
 from .disprove import disprove_demo
+from .greedy_best_trees import greedy_best_trees_demo
+from .greedy_random import greedy_random_demo
 
 __all__ = ['best_trees_demo', 'blowup_demo', 'random_search_demo', 
            'enumeration_search_demo', 'random_trees_demo', 
            'restricted_enumeration_demo', 'normal_vs_blowup_demo',
-           'reduction_demo', 'disprove_demo']
+           'reduction_demo', 'disprove_demo', 'greedy_best_trees_demo',
+           'greedy_random_demo']
