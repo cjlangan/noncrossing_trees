@@ -1,9 +1,10 @@
 import networkx as nx
-from typing import Tuple, List, Optional, Set
+from typing import Tuple, List, Optional
 
 from .conflict import ConflictAnalyzer
 from ..visualization import Visualizer
 from ..core import TreeUtils
+from ..optimization import OptimizationSolver
 
 class Greedy:
     """Analyzer to determine the flip distance between tree pairs."""
@@ -11,7 +12,7 @@ class Greedy:
     def __init__(self):
         self.conflict_analyzer = ConflictAnalyzer()
         self.visualizer = Visualizer()
-
+        self.optimizer = OptimizationSolver()
 
     def get_flip_sequence(self, 
             T_i: List[Tuple[int, int]], 
@@ -21,20 +22,16 @@ class Greedy:
     ) -> List[Tuple[Tuple[int, int], Tuple[int, int]]]:
         """Determines the flip sequence and distance between two NCSTs"""
 
-        # self.visualizer.plot_trees_together(T_i, T_f, "original_trees.png")
-        # self.visualizer.plot_linear_graph(T_i, T_f, T_i, T_f, "linear_graph.png")
-        # self.visualizer.plot_bipartite_graph(B, "bipartite_graph.png")
-
-        # Order edges (a, b) where a < b
+        # Order edges (a, b) where a < b. For consistency
         for i in range(len(T_i)):
             a, b = sorted(T_i[i])
             c, d = sorted(T_f[i])
             T_i[i] = (a, b)
             T_f[i] = (c, d)
 
-        curr_Ti = T_i.copy()
+        curr_tree = T_i.copy() # current version of the tree
 
-        # Create a new bipartite graph
+        # Create a new bipartite graph to represent edge crossings
         B = nx.Graph()
         n = len(T_i) + 1
 
@@ -70,12 +67,11 @@ class Greedy:
                 if TreeUtils.cross(ei, ef):
                     B.add_edge(f"i_{ei}", f"f_{ef}")
 
-        sequence = []
+        sequence = [] # stores the flip sequence
         done = False
 
         # Main flipping loop
         while not done:
-
             # Sort T' edges by least crossings, then by least length
             T_f_ordered = sorted(
                 (d["edge"] for n, d in B.nodes(data=True) if d["bipartite"] == 1),
@@ -85,13 +81,15 @@ class Greedy:
                 )
             )
 
+            # If no remaining edge, we are done
             if len(T_f_ordered) == 0:
                 break
 
-            # Get all minima (lowest crossings and lowest length)
+            # Get all minima (lowest crossings)
             lowest_crossing = B.degree[f"f_{T_f_ordered[0]}"]
-            lowest_length = TreeUtils.edge_length(T_f_ordered[0], n)
+            # lowest_length = TreeUtils.edge_length(T_f_ordered[0], n)
 
+            # Gath all minima (edges in T' with lowest crossings)
             minima = []
             for i in range(len(T_f_ordered)):
                 if B.degree[f"f_{T_f_ordered[i]}"] == lowest_crossing:
@@ -99,9 +97,9 @@ class Greedy:
                     minima.append(T_f_ordered[i])
             # print("Minima:", minima)
 
-            T_i_candidate = (-1, -1)
-            T_f_candidate = minima[0]
-            T_i_candidate_degree = -1
+            T_i_candidate = (-1, -1) # holds candidate edge in T to flip from
+            T_f_candidate = minima[0] # holds candidate edge in T' to flip into
+            T_i_candidate_degree = -1 # hold degree (representing crossings) of T edge candidate
             need_park = False
 
             # CASE FOR DIRECT FLIP NO CROSSING
@@ -161,6 +159,7 @@ class Greedy:
                     B.remove_node(f"f_{T_f_candidate}")
 
                 else:
+                    # If no direct flip then defer to case 3
                     need_park = True
 
 
@@ -171,7 +170,7 @@ class Greedy:
 
                 T_i_candidate_degree = 0
 
-                # Determine available borders
+                # Determine available borders (not in T)
                 available_borders = []
                 for i in range(n):
                     a, b = sorted((i, (i+1)%n))
@@ -180,8 +179,10 @@ class Greedy:
 
 
                 highest_bord_degree = -1
-                longest_cyc_length = -1
-                highest_candidate_degree = -1
+
+                # Other variables to test condition with to choose a better flip
+                # longest_cyc_length = -1 
+                # highest_candidate_degree = -1
 
                 # Find minima crosser that can be moved to border
                 for bord in available_borders:
@@ -191,15 +192,14 @@ class Greedy:
                     a,b = bord
                     temp.add_edge(a, b)
 
-
                     cyc = Greedy.get_cycle_edges_after_adding(T_i_graph, bord)
 
                     # See if any minima neighbor is in cycle
                     for e in cyc:
                         for m in minima:
+                            # If T edge is in the cycle (flippable option)
+                            # AND it crosses the minima, then it is an optional flip
                             if B.has_edge(f"i_{e}", f"f_{m}"):
-
-                                # print(f"edge {e} crosses minima {m}")
 
                                 # Remove candidate from temporary graph
                                 a, b = e
@@ -210,14 +210,14 @@ class Greedy:
                                 a, b = m
                                 temp2.add_edge(a, b)
 
-
                                 # Valid if no cycle with border and minima
+                                # We could test other methods of validating candidates
                                 valid = not Greedy.has_cycle_with_edges(temp2, bord, m) # this has been the norm
                                 # valid = True
 
                                 # Let's try highest T' degree
 
-                                # Get highest degree of border endpoint
+                                # Get highest degree of border endpoint (actual degree; not crossings)
                                 # We want higher degree to stay more connect to larger structure
                                 temp3 = temp.copy()
                                 temp3 = T_f_graph.copy() # Makes n=13 better, but n=12 worse
@@ -226,28 +226,8 @@ class Greedy:
                                 bord_degree = max(temp3.degree[bord[0]], temp3.degree[bord[1]])
 
 
-                                # Testing new validation:
-                                # Get all edge neighbors of candidate border edge
-                                # temp3 = T_f_graph.copy()
-                                # a_edges = list(temp3.edges(a))
-                                # b_edges = list(temp3.edges(b))
-                                # neigh = a_edges + b_edges
-                                #
-                                # # Sort since getting edges always messes things up
-                                # for i in range(len(neigh)):
-                                #     a, b = sorted(neigh[i])
-                                #     neigh[i] = (a, b)
-                                #
-                                #
-                                # # Ensure none are minima
-                                # valid = True
-                                # for mi in minima:
-                                #     for ne in neigh:
-                                #         if mi == ne:
-                                #             valid = False
-
-
-                                cyc_length = len(Greedy.get_cycle_edges_after_adding(T_f_graph, bord))
+                                # Another variable used to maybe get a better greedy choice
+                                # cyc_length = len(Greedy.get_cycle_edges_after_adding(T_f_graph, bord))
 
 
                                 # Prioritise higher crossing candidate, then border degree
@@ -261,55 +241,64 @@ class Greedy:
                                 if valid and (TreeUtils.edge_length(e, n) > TreeUtils.edge_length(T_i_candidate, n) or (TreeUtils.edge_length(e, n) == TreeUtils.edge_length(T_i_candidate, n) and bord_degree > highest_bord_degree)):
                                                                                                                         #(cyc_length > longest_cyc_length or (cyc_length == longest_cyc_length and bord_degree > highest_bord_degree)))):
 
+                                # Yet another method of validation
                                 # if valid and B.degree[f"i_{e}"] > highest_candidate_degree:
+                                    #highest_candidate_degree = B.degree[f"i_{e}"]
+
                                     highest_bord_degree = bord_degree
-                                    highest_candidate_degree = B.degree[f"i_{e}"]
                                     T_f_candidate = bord
                                     T_i_candidate = e
 
                                     break
 
-                # Determine all possible borders the chosen candidate can move to 
-                candidate_borders = []
-                for bord in available_borders:
-                    temp = T_i_graph.copy()
-                    a,b = bord
-                    temp.add_edge(a, b)
-
-                    cyc = Greedy.get_cycle_edges_after_adding(T_i_graph, bord)
-
-                    for e in cyc:
-                        if e == T_i_candidate:
-                            candidate_borders.append(bord)
-                            break
-
-                # print(f"All bords: {candidate_borders}")
-
-
                 # Since indirect, we need to add a new T edge/bipartite node
                 B.add_node(f"i_{T_f_candidate}", bipartite=0, edge=T_f_candidate)
 
 
-            # Execute the flip Found
+            # Add flip to sequence
             if verbose:
                 print(f"Best flip: {T_i_candidate} --> {T_f_candidate}, crossing {T_i_candidate_degree} edges")
             sequence.append((T_i_candidate, T_f_candidate))
 
             # Execute the flip
-            curr_Ti.remove(T_i_candidate)
-            curr_Ti.append(T_f_candidate)
+            curr_tree.remove(T_i_candidate)
+            curr_tree.append(T_f_candidate)
             a,b = T_i_candidate
             c,d = T_f_candidate
             T_i_graph.remove_edge(a,b)
             T_i_graph.add_edge(c,d)
 
+            # Now we need to update the Bipartite graph, edge is removed so remove vertex associated
+            B.remove_node(f"i_{T_i_candidate}")
+
             # Print trees after flip if on step by step mode
             if slow:
                 input()
-                Visualizer.plot_trees_together(curr_Ti, T_f, "original_trees.png")
+                Visualizer.plot_trees_together(curr_tree, T_f, "original_trees.png")
 
-            # Now we need to update the Bipartite graph, edge is removed so remove vertex associated
-            B.remove_node(f"i_{T_i_candidate}")
+                # The rest of this just generates the conflict graph, not necessary
+                # Get conflict vertices and edge pairs
+                conflict_vertices, E_i, E_f = self.conflict_analyzer.get_gaps_and_edge_pairs(curr_tree, T_f)
+
+                # Get conflict edges
+                conflict_edges = self.conflict_analyzer.get_conflict_edges(
+                    conflict_vertices, E_i, E_f)
+
+                # Create conflict graph
+                H = nx.DiGraph()
+                H.add_nodes_from(conflict_vertices)
+                for u, v, t in conflict_edges:
+                    H.add_edge(u, v, type=t)
+
+                # Find largest acyclic subgraph
+                acyclic_nodes = self.optimizer.find_largest_acyclic_subgraph(H)
+                ac_h = len(acyclic_nodes)
+                v_h = len(conflict_vertices)
+                gamma = None if v_h == 0 else ac_h / v_h
+
+                # Feel free to add this information to output for testing
+                #Visualizer.plot_conflict_graph(H, "conflict_graph.png")
+                # print(f"Gamma = {gamma} = {ac_h}/{v_h}")
 
 
         if verbose:
