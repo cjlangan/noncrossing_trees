@@ -67,6 +67,9 @@ class Greedy:
                 if TreeUtils.cross(ei, ef):
                     B.add_edge(f"i_{ei}", f"f_{ef}")
 
+        if slow: 
+            Visualizer.plot_bipartite_graph(B, "bipartite_graph.png")
+
         sequence = [] # stores the flip sequence
         done = False
 
@@ -359,3 +362,25 @@ class Greedy:
             return False
 
         return False
+
+
+    def flip_trees(self, 
+            T_i: List[Tuple[int, int]], 
+            T_f: List[Tuple[int, int]],
+    ):
+        """Tracks the transition-graph whilst flipping"""
+
+        """
+        The transition-graph is something I made up that shows where edges
+        can be flipped to and the edges they conflict with (crossing currently).
+
+        Every edge must first be represented as a vertex is the transition-graph
+
+        Note: We include all possible edges in the graph.
+
+        Then we draw a directed edge from e to e' if e can be flipped to e'
+        """
+
+
+
+
