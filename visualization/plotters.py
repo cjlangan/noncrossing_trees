@@ -2,6 +2,7 @@ import sys
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.patches import Arc
+from matplotlib.patches import FancyArrowPatch
 from matplotlib.lines import Line2D
 import networkx as nx
 from typing import List, Tuple, Optional
@@ -146,70 +147,56 @@ class Visualizer:
         else:
             plt.show()
 
+
     @staticmethod
     def plot_conflict_graph(H: nx.DiGraph, filename: Optional[str] = None):
-        """Generate conflict graph visualization."""
+        """Generate conflict graph visualization with curved edges to avoid overlap."""
         edge_color_map = {1: 'black', 2: 'purple', 3: 'orange'}
-        edge_colors = [edge_color_map[H[u][v]['type']] for u, v in H.edges()]
-        edge_labels = nx.get_edge_attributes(H, 'type')
 
-        pos = nx.shell_layout(H)
+        # Extract edges and colors
+        edges = list(H.edges(data=True))
+        edge_colors = [edge_color_map[d['type']] for _, _, d in edges]
+        edgelist = [(u, v) for u, v, _ in edges]
+
+        # Circular layout (nodes on convex hull of a circle)
+        pos = nx.circular_layout(H)
 
         plt.figure(figsize=(6, 6), dpi=300)
-        nx.draw(H, pos, with_labels=True, node_color='lightblue',
-                edge_color=edge_colors, node_size=2000, arrows=True)
-        nx.draw_networkx_edge_labels(H, pos, edge_labels=edge_labels)
 
-        # Create legend
+        # Draw nodes (smaller)
+        nx.draw_networkx_nodes(H, pos, node_color='lightblue', node_size=800)
+
+        # Draw edges with slight curvature
+        for (u, v), color in zip(edgelist, edge_colors):
+            start, end = Visualizer.shorten_edge(pos, u, v, node_radius=0.08)  # match node size
+            arrow = FancyArrowPatch(start, end, # type: ignore[arg-type]
+                            arrowstyle='-|>',
+                            color=color,
+                            linewidth=2,
+                            mutation_scale=15,
+                            connectionstyle="arc3,rad=0.25",
+                            zorder=1)
+            plt.gca().add_patch(arrow)
+
+        # Draw node labels only
+        nx.draw_networkx_labels(H, pos, font_size=10, font_weight="bold")
+
+        # Remove axes/black box
+        plt.axis("off")
+
+        # Legend
         legend_elements = [
             Line2D([0], [0], color='black', lw=2, label='Type 1'),
             Line2D([0], [0], color='purple', lw=2, label='Type 2'),
             Line2D([0], [0], color='orange', lw=2, label='Type 3')
         ]
         plt.legend(handles=legend_elements, loc='upper left')
-        plt.title("Conflict Directed Graph with Edge Type Legend")
+        plt.title("Conflict Graph")
 
         if filename:
             plt.savefig(f"./{PROJECT_NAME}/{filename}", bbox_inches='tight')
             plt.close()
             print(f"Generated conflict graph as {filename}")
-        else:
-            plt.show()
-
-
-    @staticmethod
-    def print_tree(T, filename=None):
-        """Generate an image of a single tree in convex position"""
-        n = len(T) + 1
-        angles = np.linspace(0, 2 * np.pi, n, endpoint=False)
-        points = np.stack([np.cos(angles), np.sin(angles)], axis=1)
-
-        fig, ax = plt.subplots(figsize=(8, 8), dpi=300)
-        ax.set_aspect('equal')
-        ax.axis('off')
-
-        # Draw the convex polygon outline
-        for i in range(n):
-            x1, y1 = points[i]
-            x2, y2 = points[(i + 1) % n]
-            ax.plot([x1, x2], [y1, y2], color='gray', linestyle='--', linewidth=0.5)
-
-        # Draw the tree edges
-        for (i, j) in T:
-            xi, yi = points[i]
-            xj, yj = points[j]
-            ax.plot([xi, xj], [yi, yj], color='black', linewidth=2, alpha=0.8)
-
-        # Label the vertices
-        for i, (x, y) in enumerate(points):
-            ax.text(x * 1.08, y * 1.08, str(i), fontsize=12, ha='center', va='center')
-
-        plt.title("Tree on Convex Polygon")
-
-        if filename:
-            plt.savefig(f"./{PROJECT_NAME}/{filename}", bbox_inches='tight')
-            plt.close(fig)
-            print("Generated tree graph as", filename)
         else:
             plt.show()
 
@@ -263,3 +250,53 @@ class Visualizer:
             print(f"Generated bipartite graph as {filename}")
         else:
             plt.show()
+
+    @staticmethod
+    def plot_tree(T: List[Tuple[int, int]], filename: Optional[str] = None):
+        """Plot a single tree together in convex position."""
+        n = len(T) + 1
+        angles = np.linspace(0, 2 * np.pi, n, endpoint=False)
+        points = np.stack([np.cos(angles), np.sin(angles)], axis=1)
+
+        fig, ax = plt.subplots(figsize=(8, 8), dpi=300)
+        ax.set_aspect('equal')
+        ax.axis('off')
+
+        # Draw convex polygon
+        for i in range(n):
+            x1, y1 = points[i]
+            x2, y2 = points[(i + 1) % n]
+            ax.plot([x1, x2], [y1, y2], color='gray',
+                    linestyle='--', linewidth=0.5)
+
+        for (i, j) in T:
+            xi, yi = points[i]
+            xj, yj = points[j]
+            ax.plot([xi, xj], [yi, yj], color='black',
+                    linewidth=2, alpha=0.7)
+
+        # Label vertices
+        for i, (x, y) in enumerate(points):
+            ax.text(x * 1.08, y * 1.08, str(i),
+                    fontsize=12, ha='center', va='center')
+
+        if filename:
+            plt.savefig(f"./{PROJECT_NAME}/{filename}", bbox_inches='tight')
+            plt.close(fig)
+            print(f"Generated NCST as {filename}")
+        else:
+            plt.show()
+
+    @staticmethod
+    def shorten_edge(pos, u, v, node_radius=0.05):
+        """Return modified start/end positions so arrow stops at node boundary."""
+        x1, y1 = pos[u]
+        x2, y2 = pos[v]
+        vec = np.array([x2 - x1, y2 - y1])
+        length = np.linalg.norm(vec)
+        if length == 0:
+            return (x1, y1), (x2, y2)
+        # Shorten the vector by node_radius at target
+        vec_unit = vec / length
+        new_end = np.array([x2, y2]) - vec_unit * node_radius
+        return (x1, y1), new_end
